@@ -14,6 +14,7 @@ public class PlayerAnimationEventSender : MonoBehaviour
     public UnityEvent OnAnimationEnd; // 애니메이션 종료
     public UnityEvent OnHighSpeedRotationSpeedEnd; // 회전이 빨라지는 구간 종료
     public UnityEvent OnPerfectDodgeEnd; // 완벽 회피 종료
+    public UnityEvent OnDodgeSFX; // 회피 SFX 재생
 
     private void Awake()
     {
@@ -64,5 +65,10 @@ public class PlayerAnimationEventSender : MonoBehaviour
     public void OnPerfectDodgeEndInvoke()
     {
         OnPerfectDodgeEnd?.Invoke();
+    }
+
+    public void OnDodgeJetSFXInvoke()
+    {
+        OnDodgeSFX?.Invoke();
     }
 }

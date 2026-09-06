@@ -14,6 +14,9 @@ public abstract class EnemyAttackNoticeState : EnemyStateBase
         // 공격 알림 VFX 재생
         Core.AnimationEvent.AttackNoticeVFX();
 
+        // 공격 알림 SFX 재생
+        Core.AttackNoticeSFX();
+
         // 애니메이션 재생
         Core.Animator.SetTrigger("IsIdle");
     }

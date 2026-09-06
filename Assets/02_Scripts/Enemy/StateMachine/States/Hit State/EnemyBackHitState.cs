@@ -32,6 +32,7 @@ public class EnemyBackHitState : EnemyStateBase
         Core.AnimationEvent.OnAnimationEnd += SetTransitionIdle;
 
         Core.PlayHitReaction(HitStateHash);
+        //Core.BackHitVFXOn();
     }
 
     public override void UpdateTick()

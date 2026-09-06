@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Close Attack Hit 1
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAttackSO
   AttackID: 0
-  HitStopFrame: 2
+  HitStopFrame: 5
   DamagedLayer:
     serializedVersion: 2
     m_Bits: 256

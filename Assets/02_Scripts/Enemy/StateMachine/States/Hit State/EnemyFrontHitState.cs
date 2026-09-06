@@ -32,6 +32,7 @@ public class EnemyFrontHitState : EnemyStateBase
         Core.AnimationEvent.OnAnimationEnd += SetTransitionIdle;
 
         Core.PlayHitReaction(HitStateHash);
+        //Core.FrontHitVFXOn();
     }
 
     public override void UpdateTick()

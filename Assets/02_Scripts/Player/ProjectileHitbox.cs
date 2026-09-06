@@ -41,6 +41,7 @@ public class ProjectileHitbox : MonoBehaviour
     private Camera _fallbackBakeCamera;
     private GameObject _owner;
     private PlayerCore _skillGaugeOwner;
+    private PlayerSFXController _playerSFXController;
     private float _tickElapsed;
     private bool _refreshSources = true;
 
@@ -53,6 +54,9 @@ public class ProjectileHitbox : MonoBehaviour
     {
         _owner = owner;
         _skillGaugeOwner = owner != null ? owner.GetComponentInParent<PlayerCore>() : null;
+        _playerSFXController = _skillGaugeOwner != null
+            ? _skillGaugeOwner.GetComponentInChildren<PlayerSFXController>(true)
+            : null;
         _tickElapsed = 0f;
         _targetsInCurrentTick.Clear();
         _hitStopVictims.Clear();
@@ -93,6 +97,7 @@ public class ProjectileHitbox : MonoBehaviour
         _fallbackBakeCamera = null;
         _owner = null;
         _skillGaugeOwner = null;
+        _playerSFXController = null;
         _tickElapsed = 0f;
         _targetsInCurrentTick.Clear();
         _hitStopVictims.Clear();
@@ -156,6 +161,7 @@ public class ProjectileHitbox : MonoBehaviour
             _damage,
             _hitStopFrame,
             _staggerLevel);
+        bool dealtDamage = false;
         for (int i = 0; i < count; i++)
         {
             Collider hit = _overlapResults[i];
@@ -170,10 +176,15 @@ public class ProjectileHitbox : MonoBehaviour
             if (!enemy.TryTakeDamage(damageData))
                 continue;
 
+            dealtDamage = true;
             _hitStopVictims.Add(enemy);
             if (_skillGaugeOwner != null && _skillGaugeAdditive > 0f)
                 _skillGaugeOwner.AddSkillGauge(_skillGaugeAdditive);
         }
+
+        // 한 검사에서 몇 명을 맞혀도 히트 피드백은 한 번만 재생합니다.
+        if (dealtDamage)
+            _playerSFXController?.PlayOneShotHitFeedbackSFX();
 
         HitstopCoordinator.RequestVictimsOnly(_hitStopVictims, _hitStopFrame);
     }

@@ -28,6 +28,10 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
     [SerializeField, Min(0f)] private float _hitReactionChainResetDelay = 1.25f;
     [SerializeField] private Vector2 _hitReactionResistanceDurationRange = new(1.75f, 2.75f);
 
+    [SerializeField] private EnemySFX _enemySFX;
+    [SerializeField] private ParticleSystem _frontHitVFX;
+    [SerializeField] private ParticleSystem _backHitVFX;
+
     private DamageData _lastDamageData;
 
     private EnemyRotator _rotator;
@@ -170,6 +174,16 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
         _lastDamageData = damageData;
         OnDamaged?.Invoke(damageData);
         OnHealthChange?.Invoke(_maxHP, _currentHP);
+
+        HitDirectionType type = HitDirectionCalculator.GetHitDirection(
+            damageData,
+            transform.position,
+            Rotator.FacingDirection);
+
+        if (type == HitDirectionType.Front)
+            FrontHitVFXOn();
+        else if (type == HitDirectionType.Back)
+            BackHitVFXOn();
 
         return true;
     }
@@ -404,6 +418,7 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
         EnemyDeadEventInvoke();
         ColliderDisable();
         DeadVFXPlay();
+        DeadSFXOn();
     }
 
     public void EnemyDeadEventInvoke()
@@ -419,6 +434,33 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
     public void DeadVFXPlay()
     {
         _deadVFX.Play();
+    }
+
+    public void AttackNoticeSFX()
+    {
+        _enemySFX.OnAttackNoticeSFX();
+    }
+
+    public void CloseAttackHitSFX()
+    {
+        _enemySFX.OnCloseAttackHitSFX();
+    }
+
+    public void FrontHitVFXOn()
+    {
+        _frontHitVFX.time = 0f;
+        _frontHitVFX.Play();
+    }
+
+    public void BackHitVFXOn()
+    {
+        _backHitVFX.time = 0f;
+        _backHitVFX.Play();
+    }
+
+    public void DeadSFXOn()
+    {
+        _enemySFX.OnDeadSFX();
     }
 
     private void OnValidate()

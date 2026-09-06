@@ -15,6 +15,7 @@ public class EnemyHitboxPool : MonoBehaviour
     private readonly List<IHitStopParticipant> _hitStopVictims = new();
 
     private IHitStopParticipant _ownerHitStopParticipant;
+    private EnemyCore _enemyCore;
     private int _boxUsageFrame = -1;
     private int _sphereUsageFrame = -1;
     private int _usedBoxHitboxCount;
@@ -23,6 +24,7 @@ public class EnemyHitboxPool : MonoBehaviour
     private void Awake()
     {
         _ownerHitStopParticipant = GetComponentInParent<IHitStopParticipant>();
+        TryGetComponent(out _enemyCore);
 
         for (int i = 0; i < _boxHitboxPoolCount; i++)
             CreateBoxHitbox();
@@ -87,6 +89,9 @@ public class EnemyHitboxPool : MonoBehaviour
             DamageData damageData = new DamageData(gameObject, hitboxInfo.DamageAmount, hitStopFrame);
             if (!damageable.TryTakeDamage(damageData))
                 continue;
+
+            if (damageable is PlayerCore)
+                _enemyCore?.CloseAttackHitSFX();
 
             if (damageable is IHitStopParticipant participant && !_hitStopVictims.Contains(participant))
                 _hitStopVictims.Add(participant);

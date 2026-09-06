@@ -4867,8 +4867,10 @@ GameObject:
   m_Component:
   - component: {fileID: 1428623402937711696}
   - component: {fileID: 7202991159781366627}
+  - component: {fileID: 6685047707270081148}
   - component: {fileID: 4458304778449931968}
   - component: {fileID: 2548860344523996477}
+  - component: {fileID: 409708497090462122}
   m_Layer: 0
   m_Name: Dodge Attack Projectile
   m_TagString: Untagged
@@ -4922,6 +4924,27 @@ MonoBehaviour:
   _minimumSize: {x: 0.1, y: 0.1, z: 0.1}
   _previewColor: {r: 0.2, g: 1, b: 0.3, a: 1}
   _showSourceBounds: 0
+--- !u!114 &6685047707270081148
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2602250327734018963}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88cc94b196e1a9e42b2740a214167c2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectileSFX
+  _as: {fileID: 409708497090462122}
+  _projectileSlashClip:
+  - {fileID: 8300000, guid: 64039575eb65a0f4fbd01cc892ec4721, type: 3}
+  - {fileID: 8300000, guid: f5c4223c0edc25a4fb54fa8003063d97, type: 3}
+  - {fileID: 8300000, guid: ad6997f119548e746829b1376e549c59, type: 3}
+  - {fileID: 8300000, guid: 000ea38557c10ca429ff2dbde8198cbc, type: 3}
+  - {fileID: 8300000, guid: 89635b3dc718884419953d4d1ce2eed5, type: 3}
+  _soundOnCount: 5
+  _endTime: 0.6
 --- !u!198 &4458304778449931968
 ParticleSystem:
   m_ObjectHideFlags: 0
@@ -9804,6 +9827,103 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
+--- !u!82 &409708497090462122
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2602250327734018963}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &6307670603890997811
 GameObject:
   m_ObjectHideFlags: 0

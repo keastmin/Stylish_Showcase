@@ -5,6 +5,7 @@ using UnityEngine.Scripting;
 public class EnemyAnimationEventSender : MonoBehaviour
 {
     [SerializeField] private EnemyAnimationEvent _animEvent;
+    [SerializeField] private EnemySFX _enemySFX;
 
     public void OnAnimationEnd(AnimationEvent animationEvent)
     {
@@ -31,4 +32,8 @@ public class EnemyAnimationEventSender : MonoBehaviour
         _animEvent.AttackNoticeVFX();
     }
 
+    public void OnCloseAttackSlashSFX()
+    {
+        _enemySFX.OnCloseAttackSlashSFX();
+    }
 }

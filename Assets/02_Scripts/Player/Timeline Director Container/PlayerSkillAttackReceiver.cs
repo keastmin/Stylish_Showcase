@@ -1,11 +1,15 @@
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
+using Unity.Cinemachine;
 
 [DisallowMultipleComponent, RequireComponent(typeof(PlayableDirector))]
 public sealed class PlayerSkillAttackReceiver : MonoBehaviour, INotificationReceiver
 {
     public const int DamageFieldCount = 12;
+
+    [SerializeField] private CinemachineImpulseSource _skillHitImpulse;
+    [SerializeField, Min(0f)] private float _skillHitShakeForce = 1.8f;
 
     [SerializeField] private PlayerAttackInstanceContainer _attackContainer;
     [SerializeField] private Transform _hitboxRoot;
@@ -26,8 +30,6 @@ public sealed class PlayerSkillAttackReceiver : MonoBehaviour, INotificationRece
 
     public void OnNotify(Playable origin, INotification notification, object context)
     {
-        // Editor preview/scrubbing and callbacks left over after an interrupted
-        // skill must never deal damage. Timeline handles once-per-playback delivery.
         if (!Application.isPlaying || !isActiveAndEnabled ||
             notification is not PlayerSkillHitMarker marker ||
             _director == null || _director.state != PlayState.Playing ||
@@ -43,11 +45,12 @@ public sealed class PlayerSkillAttackReceiver : MonoBehaviour, INotificationRece
             return;
         }
 
-        // Timeline moves the hitboxes in this frame; queries need their current
-        // world poses even when Physics.autoSyncTransforms is disabled.
         Physics.SyncTransforms();
-        // Each marker is a separate hit. Multiple colliders on one enemy are
-        // deduplicated within this hit, while later Hit12 markers can hit it again.
+
+        // 시네머신 셰이크
+        if (_skillHitImpulse != null)
+            _skillHitImpulse.GenerateImpulseWithForce(_skillHitShakeForce);
+
         _attackContainer.GiveDamageFieldNoHashing(field);
     }
 }

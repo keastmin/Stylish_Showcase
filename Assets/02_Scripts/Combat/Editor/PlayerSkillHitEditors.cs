@@ -11,6 +11,8 @@ public sealed class PlayerSkillAttackReceiverEditor : Editor
         serializedObject.Update();
         EditorGUILayout.PropertyField(serializedObject.FindProperty("_attackContainer"));
         EditorGUILayout.PropertyField(serializedObject.FindProperty("_hitboxRoot"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_skillHitImpulse"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_skillHitShakeForce"));
         EditorGUILayout.HelpBox("Skill Hits의 마커가 시간순으로 Hit1~12를 사용합니다. 13번째 이후는 Hit12를 반복 타격합니다. 각 타격의 공격 단계는 Stagger Level로 설정합니다.", MessageType.Info);
         SerializedProperty fields = serializedObject.FindProperty("_damageFields");
         fields.arraySize = PlayerSkillAttackReceiver.DamageFieldCount;

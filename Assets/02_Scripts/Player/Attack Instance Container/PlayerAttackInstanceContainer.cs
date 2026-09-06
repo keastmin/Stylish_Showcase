@@ -23,12 +23,17 @@ public class PlayerAttackInstanceContainer : MonoBehaviour
     private readonly List<IHitStopParticipant> _hitStopVictims = new();
 
     private IHitStopParticipant _ownerHitStopParticipant;
+    private PlayerSFXController _playerSFXController;
 
     public event Action<float> OnAttackSkillGaugeAdditive; // 타격에 의한 스킬 게이지 증가 이벤트
 
     private void Awake()
     {
         _ownerHitStopParticipant = GetComponentInParent<IHitStopParticipant>();
+        PlayerCore owner = GetComponentInParent<PlayerCore>();
+        _playerSFXController = owner != null
+            ? owner.GetComponentInChildren<PlayerSFXController>(true)
+            : GetComponentInParent<PlayerSFXController>();
     }
 
     // 기본 공격 1 데미지 주기
@@ -135,6 +140,7 @@ public class PlayerAttackInstanceContainer : MonoBehaviour
         Collider[] hits = damageField.DetectTargets();
         _targetsInCurrentDetection.Clear();
         _hitStopVictims.Clear();
+        bool dealtDamage = false;
 
         foreach (Collider hit in hits)
         {
@@ -153,12 +159,17 @@ public class PlayerAttackInstanceContainer : MonoBehaviour
             if (!damageable.TryTakeDamage(data))
                 continue;
 
+            dealtDamage = true;
+
             // 스킬 게이지 증가
             OnAttackSkillGaugeAdditive?.Invoke(damageField.SkillGaugeAdditive);
 
             if (damageable is IHitStopParticipant participant)
                 _hitStopVictims.Add(participant);
         }
+
+        if (dealtDamage)
+            _playerSFXController?.PlayOneShotHitFeedbackSFX();
 
         if (damageField.HitStopMode == AttackHitStopMode.VictimsOnly)
             HitstopCoordinator.RequestVictimsOnly(_hitStopVictims, damageField.HitStopFrame);

@@ -14,21 +14,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineBlenderSettings
   CustomBlends:
   - From: Player Freelook Cinemachine
-    To: Skill Camera
+    To: Skill Camera 1
     Blend:
       Style: 1
-      Time: 0.3
+      Time: 0.2
       CustomCurve:
         serializedVersion: 2
         m_Curve: []
         m_PreInfinity: 0
         m_PostInfinity: 0
         m_RotationOrder: 0
-  - From: Skill Camera
+  - From: Skill Camera 1
     To: Player Freelook Cinemachine
     Blend:
       Style: 1
-      Time: 0.3
+      Time: 0.2
       CustomCurve:
         serializedVersion: 2
         m_Curve: []
