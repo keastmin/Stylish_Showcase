@@ -78,7 +78,7 @@ MonoBehaviour:
       useCameraFov: 1
       kernelSize: 1
   motionBlur:
-    m_Enabled: 0
+    m_Enabled: 1
     m_Settings:
       shutterAngle: 270
       sampleCount: 10
@@ -141,7 +141,7 @@ MonoBehaviour:
         linear:
           lift: {r: 0.89189947, g: 0.6614747, b: 1, a: 0}
           gamma: {r: 0.73155546, g: 0.9175207, b: 1, a: 0}
-          gain: {r: 0.7270916, g: 0.8338497, b: 1, a: 0}
+          gain: {r: 0.7270916, g: 0.8338498, b: 1, a: 0}
       curves:
         master:
           curve:

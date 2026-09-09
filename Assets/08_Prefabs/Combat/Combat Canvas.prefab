@@ -45,6 +45,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5257143149064837696}
+  - component: {fileID: 2636522205961042393}
   - component: {fileID: 1884682758316630073}
   m_Layer: 5
   m_Name: Player Skill Gauge Bar
@@ -75,6 +76,21 @@ RectTransform:
   m_AnchoredPosition: {x: 25, y: -75}
   m_SizeDelta: {x: 300, y: 25}
   m_Pivot: {x: 0, y: 1}
+--- !u!114 &2636522205961042393
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 736242364743437651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95f2ef2649f55e0458757a170b73a3d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerSkillGaugeUI
+  _player: {fileID: 0}
+  _slider: {fileID: 1884682758316630073}
+  _sliderLerpSpeed: 10
 --- !u!114 &1884682758316630073
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -698,6 +714,7 @@ MonoBehaviour:
   _disableFadeInDuration: 0.2
   _disableFadeOutDuration: 0.2
   _damagedVisibleDuration: 3
+  _deadFadeOutDuration: 0.5
 --- !u!1 &7655308357513316132
 GameObject:
   m_ObjectHideFlags: 0
