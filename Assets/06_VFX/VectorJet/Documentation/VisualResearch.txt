@@ -1,0 +1,37 @@
+VectorJet visual reference notes — 2026-11-07
+
+Primary references inspected
+1. NASA / Lockheed Martin, X-59 maximum afterburner gallery, 22 Jan 2025.
+   https://www.nasa.gov/gallery/x-59-afterburner-testing-gallery/
+   https://www.nasa.gov/image-article/diamonds-from-nasas-x-59/
+   Original overview: https://www.nasa.gov/wp-content/uploads/2025/02/p25-007-06orig.jpg
+   Close view: https://www.nasa.gov/wp-content/uploads/2025/01/p25-007-07.jpg
+   Image credit: Lockheed Martin / Gary (also rendered Garry) Tice, as printed on NASA pages.
+   These downloaded images are research references, not shipped texture masks.
+2. NASA, Into the Blue Sky.
+   https://www.nasa.gov/image-article/into-blue-sky/
+   NASA identifies the blue cone formations below Atlantis main engines as shock/Mach diamonds.
+3. USAF Yokota afterburner photo gallery.
+   https://www.yokota.af.mil/News/Photos/igtag/Afterburner/
+   Indexed official captions describe short bursts during takeoff, climb, or combat maneuvers.
+
+Observed in the two X-59 photographs (direct image inspection)
+- A narrow axial column persists beyond the nozzle. The initial outside edges are comparatively parallel, then the tail spreads and loses definition.
+- Pale blue/violet outer emission forms a continuous translucent shell. Warmer peach/pink bright compression regions recur inside it.
+- Compression features are connected by dimmer flame, not detached floating rings. Their contrast decreases downstream.
+- Thin longitudinal strands remain visible across multiple compression regions. The tail has uneven wisps and no hard geometric cut.
+- The luminous jet has a hierarchy of bright localized internal zones and low-opacity outer haze. It is not uniformly clipped white.
+- These are still images with camera exposure blur. They do not establish exact pulse frequency or ignition timing.
+
+Proposed game-art targets (design choices, not measured engine data)
+1. Compact silhouette: visible length 4–6 nozzle diameters in hover, 6–8 in an ignition kick. Avoid a wide torch cone. Keep 3–4 readable compression cells.
+2. Layered color: near-white cyan core, saturated cyan/violet outer veil, restrained warm peach near the throat and ignition. Outer shell opacity roughly 15–30% of core; preserve dim gaps between cells after bloom.
+3. Ignition envelope: 0–35 ms sharp throat flash; 35–100 ms axial expansion with 10–20% length overshoot; 100–250 ms tight sustained pulse; 80–160 ms downstream decay after fuel cutoff. Expose these as artistic controls.
+4. Hover: stable narrow envelope with small asynchronous 5–10% length/width fluctuations and 10–20% luminosity variation; avoid global on/off flashing. Pulse mode can use 0.15–0.35 s bursts with fully dark rests.
+5. Geometry / masks: Blender open tapered shell plus an inner diamond-cell mesh, smooth axial UVs. Use generated grayscale axial filament masks (dark background / bright strands); multiply by mesh envelope. Keep nozzle metal separate from emissive layers.
+6. QA: side view, 3/4 view, and nozzle view; check on dark and middle-gray backgrounds with bloom enabled. At small size the silhouette and first cells must remain readable. Freeze startup, peak, hover, and cutoff to reject square cards, opaque plastic cones, isolated donuts, abrupt tip cuts, and excessive sparks.
+
+Existing project fallback textures
+Assets/06_VFX/ChromaticAfterimage/Textures/WakeWisp.png
+Assets/06_VFX/Attack Notice/flash_radial_gradient.png
+These exist as alpha-oriented white textures. New jet-specific masks are preferred for the requested asset.

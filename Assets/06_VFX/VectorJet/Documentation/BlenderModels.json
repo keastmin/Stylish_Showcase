@@ -1,0 +1,63 @@
+{
+  "axis": "Vertices in Unity-native +Z exhaust, +Y up. FBX space transform disabled; Y-up/-Z-forward metadata. No parent transforms.",
+  "units": "meters",
+  "origin": "nozzle outlet plane at z=0",
+  "uv": "UV.x circumference 0..1, UV.y global normalized axial Z (all VFX meshes).",
+  "models": {
+    "JetCore": {
+      "vertices": 2009,
+      "polygons": 1920,
+      "bounds_min": [
+        -0.15105466544628143,
+        -0.15105466544628143,
+        0.0
+      ],
+      "bounds_max": [
+        0.15105466544628143,
+        0.15105466544628143,
+        1.0
+      ],
+      "materials": [
+        "VFX_Core_Preview"
+      ]
+    },
+    "JetShockCells": {
+      "vertices": 3332,
+      "polygons": 3072,
+      "bounds_min": [
+        -0.09000000357627869,
+        -0.09000000357627869,
+        0.20125000178813934
+      ],
+      "bounds_max": [
+        0.09000000357627869,
+        0.09000000357627869,
+        0.9424999952316284
+      ],
+      "materials": [
+        "VFX_Shock_Preview"
+      ]
+    },
+    "JetNozzle": {
+      "vertices": 4962,
+      "polygons": 4384,
+      "bounds_min": [
+        -0.24799999594688416,
+        -0.24799999594688416,
+        -0.47999998927116394
+      ],
+      "bounds_max": [
+        0.24799999594688416,
+        0.24799999594688416,
+        0.004999999888241291
+      ],
+      "materials": [
+        "Nozzle_Graphite",
+        "Nozzle_Titanium",
+        "Nozzle_Ceramic",
+        "Nozzle_CyanIndicator",
+        "Nozzle_HeatTint"
+      ]
+    }
+  }
+}

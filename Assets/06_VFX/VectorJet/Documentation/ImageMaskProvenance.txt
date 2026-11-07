@@ -1,0 +1,10 @@
+JetFlameMask.png
+Created with the built-in image_gen tool on 2026-11-07 (Asia/Seoul).
+The generated image is used directly, with no hand-painted or programmatic image replacement.
+Original: C:/Users/kemin/.codex/generated_images/01a1b2fb-f0f6-7b52-8764-0f7839881f2c/exec-9335edb7-bbf5-4ec4-bf78-fe594f0b38b8.png
+
+Final generation prompt:
+Use case: stylized-concept. Asset type: grayscale emission texture mask for a realtime Unity VFX Graph fighter jet exhaust, NOT a picture of an engine. Create one square 1024x1024 production VFX texture. Pure black background, white and gray luminous axial plasma turbulence, absolutely no color. A single centered narrow vertical jet shape occupies the middle 45 percent of the canvas: the broad root is at the bottom y=90 percent, rising to a tapered wispy tip at y=10 percent. A hot softly glowing core surrounded by many fine elongated wispy flowing filaments and subtle shear-layer ripples, irregular natural small scale breakup, smooth continuous tones. Root width 32 percent canvas, upper tip tapers to zero. Leave all outer edges completely black with generous margin. High contrast but retain medium-gray filament details, no hard cutoffs or geometric diamonds, no smoke cloud, no sparks, no nozzle, no machinery, no text, no panels, no borders, no checkerboard. This is a flat isolated texture mask for additive emission, not a lit scene.
+
+Import: linear color, RGBA input, additive ColorAndAlpha. Black emits no light; grayscale details preserve plume filaments.
+External NASA/Lockheed photographs were used for visual study only and are not embedded in the effect.

@@ -1,0 +1,33 @@
+VECTOR JET — 검수 기록 (2026-11-07, Asia/Seoul)
+
+환경: Unity 6000.5.8f1 / URP 17.5 / VFX Graph 17.5.
+독립 에셋 경로: Assets/06_VFX/VectorJet.
+
+완료한 검수
+- Unity C# 컴파일 및 VFX Graph / Shader Graph 임포트 성공.
+- Blender FBX 코어 +Z bounds: center (0,0,0.5), extent (.151,.151,.5).
+- 네 개 실제 GPU 시스템의 이름과 실행을 확인. 재생 중 프리뷰별 약 20–25개 살아 있는 입자 확인.
+- 정지 시 두 영구 메시 입자가 남지만 Throttle 0으로 보이지 않으며 새 분사에 재사용됨.
+- 실제 Game View에서 측면/사선, 어두운/회색 배경을 비교.
+- 이음선 제거용 주기적 둘레 UV, 시선 기반 투명도, 압축 셀 Gaussian 감쇠를 검수.
+- 30fps, 144프레임, 4.8초 전체 점화/체공/급기동/소멸을 실제 Game View에서 녹화.
+- PAUSE에서 세 Graph 모두 pause=True, 속도 .25에서 playRate=.25 확인.
+- 02 SOLO에서 출력 (0,1,0) 확인.
+- 저장 후 다시 Play하여 최종 HDR 색상과 자동 반복 재생 확인.
+- 마지막 재생 및 원상복원 후 Console Error 0.
+
+캡처 도구 참고
+MCP의 ScreenCapture 보조 함수가 EditorApplication.Step을 재귀 호출하여 도구 기인 PlayerLoop 경고/오류를 발생시킨 경우가 있었음.
+최종 영상은 WaitForEndOfFrame 기반 ScreenCapture 코루틴으로 녹화했고, 이후 새 재생 검수에서 오류 0을 확인함.
+중간 HDRHalf 직접 렌더 이미지는 색 공간 비교용 연구 결과이며, 최종 PNG/영상은 실제 Game View를 사용함.
+
+보존 확인
+플레이어 프리팹/게임플레이 로직에 적용하지 않음.
+원래 CombatPrototypeScene의 루트 19개 활성 상태, dirty=True 상태, 활성 씬, runInBackground=False를 복원.
+원래 씬을 저장하거나 닫지 않음. 전용 미리보기 씬만 저장 후 닫음.
+
+최종 시각 결과
+Preview/VectorJet_Final.png
+프로젝트 output/VectorJet/VectorJet_Preview.mp4
+
+점화 시간과 색상은 게임 연출 설계이며 실제 엔진 물리 측정값이 아님.
