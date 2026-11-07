@@ -104,3 +104,11 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Local authoring scratch work and verification captures
+/.codex/*-work/
+/.codex/*-context.md
+/.codex/*-audit.md
+/.codex/unity-coordination.json
+/Artifacts/
+/output/
