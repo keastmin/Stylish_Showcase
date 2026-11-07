@@ -26,6 +26,11 @@ public class PlayerMover : MonoBehaviour
     private bool _isHitStopped;
     private RigidbodyConstraints _constraintsBeforeHitStop;
     private RigidbodyInterpolation _interpolationBeforeHitStop;
+    private bool _rootMotionHeight;
+    private bool _settlingFromRootMotion;
+    private float _landingVelocity;
+    public Vector3 PhysicsPosition => _rigidbody != null ? _rigidbody.position : transform.position;
+    public bool UsesRootMotionHeight => _rootMotionHeight;
 
     #region MonoBehaviour
 
@@ -49,13 +54,16 @@ public class PlayerMover : MonoBehaviour
             return;
         }
 
-        ApplyVelocity(ApplyGroundHover(_inputVelocity));
+        ApplyVelocity(_rootMotionHeight ? ClampRootDescent(_inputVelocity) :
+            _settlingFromRootMotion ? ApplyLanding(_inputVelocity) : ApplyGroundHover(_inputVelocity));
         UpdateCleanup();
     }
 
     private void OnDisable()
     {
+        EndRootMotionHeight();
         SetHitStopped(false);
+        // If disabled in the air, continue settling when enabled again.
     }
 
     #endregion
@@ -68,6 +76,21 @@ public class PlayerMover : MonoBehaviour
             return;
 
         _inputVelocity = velocity;
+    }
+
+    public void BeginRootMotionHeight()
+    {
+        _rootMotionHeight = true;
+        _settlingFromRootMotion = false;
+        _landingVelocity = 0f;
+    }
+
+    public void EndRootMotionHeight()
+    {
+        if (!_rootMotionHeight) return;
+        _rootMotionHeight = false;
+        _settlingFromRootMotion = true;
+        _landingVelocity = _rigidbody != null ? Mathf.Min(0f, _rigidbody.linearVelocity.y) : 0f;
     }
 
     // Transfer a command that has not reached the next physics tick yet.
@@ -174,6 +197,38 @@ public class PlayerMover : MonoBehaviour
         float hoverSpeed = Mathf.Clamp(heightError * _groundHoverSharpness, -MaxHoverSpeed, MaxHoverSpeed);
         return horizontalVelocity + Vector3.up * hoverSpeed;
     }
+
+    private Vector3 ClampRootDescent(Vector3 velocity)
+    {
+        if (velocity.y >= 0f) return velocity;
+        float step = Mathf.Max(0.0001f, Time.fixedDeltaTime);
+        if (TryGetLandingGround(Mathf.Max(_groundProbeExtraDistance, -velocity.y * step + 0.1f), out RaycastHit hit))
+            velocity.y = Mathf.Max(velocity.y, (hit.point.y - _rigidbody.position.y) / step);
+        return velocity;
+    }
+
+    private Vector3 ApplyLanding(Vector3 velocity)
+    {
+        Vector3 horizontal = Vector3.ProjectOnPlane(velocity, Vector3.up);
+        float step = Mathf.Max(0.0001f, Time.fixedDeltaTime);
+        _landingVelocity = Mathf.Max(-MaxHoverSpeed, _landingVelocity + Physics.gravity.y * step);
+        if (TryGetLandingGround(Mathf.Max(_groundProbeExtraDistance, -_landingVelocity * step + 0.1f), out RaycastHit hit))
+        {
+            float height = _rigidbody.position.y - hit.point.y;
+            if (height <= 0.04f)
+            {
+                _settlingFromRootMotion = false;
+                _landingVelocity = 0f;
+                return ApplyGroundHover(horizontal);
+            }
+            _landingVelocity = Mathf.Max(_landingVelocity, -height / step);
+        }
+        return horizontal + Vector3.up * _landingVelocity;
+    }
+
+    private bool TryGetLandingGround(float distance, out RaycastHit hit)
+        => Physics.SphereCast(_rigidbody.position + Vector3.up * GroundProbeStartHeight, GroundProbeRadius,
+            Vector3.down, out hit, GroundProbeStartHeight + distance, _groundLayerMask, QueryTriggerInteraction.Ignore) && hit.normal.y > 0f;
 
     private void UpdateCleanup()
     {

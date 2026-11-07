@@ -33,6 +33,7 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
     [SerializeField] private ParticleSystem _backHitVFX;
 
     private DamageData _lastDamageData;
+    private bool _pullReactionResolved;
 
     private EnemyRotator _rotator;
     private EnemyMover _mover;
@@ -56,12 +57,20 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
     public Animator Animator => _animatorCallback.Animator;
     public EnemyRotator Rotator => _rotator;
     public EnemyMover Mover => _mover;
+    public EnemyControlledState Control { get; private set; }
     public EnemyAnimationEvent AnimationEvent => _animationEvent;
     public EnemyStateMachine StateMachine => _stateMachine;
     public EnemyTargetDetector TargetDetector => _targetDetector;
     public EnemyHitboxPool HitboxPool => _hitboxPool;
     public EnemyAttackSimulator AttackSimulator => _attackSimulator;
     public EnemyPositioningController PositioningController => _positioningController;
+    public EnemyAttackTimingController AttackTimingController => _attackTimingController;
+    public bool IsEngagedForCoordination => isActiveAndEnabled && !IsDead && !_isHitStopped &&
+        !(Control?.Active ?? false) && _stateMachine != null &&
+        _stateMachine.CurrentState == _stateMachine.EngageState;
+    public bool IsInAttackSequence => _stateMachine != null &&
+        (_stateMachine.CurrentState is EnemyAttackNoticeState ||
+         _stateMachine.CurrentState is EnemyAttackState);
     public EnemyAttackTargetingController AttackTargeting => _attackTargeting;
     public DamageData LastDamageData => _lastDamageData;
     public bool IsHitStopped => _isHitStopped;
@@ -99,6 +108,7 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
         RollNextHitReactionThreshold();
 
         _stateMachine = new EnemyStateMachine(this);
+        Control = new EnemyControlledState(this);
         _animatorCallback.OnAnimatorMoveAction += AnimatorUpdate;
         _animationEvent.OnAttack += HandleAttack;
         CombatVfxTime.RegisterHierarchy(gameObject);
@@ -109,6 +119,7 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
         CombatTimeController.ScaleChanged += ApplyCombatSpeed;
         ApplyCombatSpeed(CombatTimeController.Scale);
         ResolvePositioningController();
+        EnemyAttackTimingController.FindFor(this)?.Register(this);
     }
 
     private void ApplyCombatSpeed(float scale)
@@ -118,11 +129,12 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
 
     private void Start()
     {
-        _stateMachine.InitEnemyStateMachine(_stateMachine.IdleState);
+        if (!Control.Active) _stateMachine.InitEnemyStateMachine(_stateMachine.IdleState);
     }
 
     private void Update()
     {
+        if (VirtualCutscenePlayback.IsPlaying || ProjectR.UI.PauseSettingsController.InputBlocked) return;
         TickCombatTimers();
 
         if (_isHitStopped)
@@ -133,6 +145,7 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
 
     private void FixedUpdate()
     {
+        if (VirtualCutscenePlayback.IsPlaying || ProjectR.UI.PauseSettingsController.InputBlocked) return;
         if (_isHitStopped)
             return;
 
@@ -141,6 +154,7 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
 
     private void LateUpdate()
     {
+        if (VirtualCutscenePlayback.IsPlaying || ProjectR.UI.PauseSettingsController.InputBlocked) return;
         if (_isHitStopped)
             return;
 
@@ -149,6 +163,7 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
 
     private void AnimatorUpdate()
     {
+        if (VirtualCutscenePlayback.IsPlaying || ProjectR.UI.PauseSettingsController.InputBlocked) return;
         if (_isHitStopped)
             return;
 
@@ -157,22 +172,35 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
 
     private void OnDisable()
     {
+        Control?.Release();
         EndAttackTargeting();
         ReleaseAttackPermission();
+        _attackTimingController?.Unregister(this);
         _positioningController?.Unregister(this);
         EndHitStop();
         CombatTimeController.ScaleChanged -= ApplyCombatSpeed;
         ApplyCombatSpeed(1f);
     }
 
-    public bool TryTakeDamage(DamageData damageData)
+    public bool TryTakeDamage(DamageData damageData) => TakeHit(damageData);
+
+    public bool TakeHit(DamageData damageData, object cast = null, UltimatePull pull = null,
+        Vector3 center = default, Func<Vector3> follow = null)
     {
+        if (!isActiveAndEnabled || IsDead) return false;
+        if (damageData.DamageAmount <= 0f)
+            return pull != null && Control.Apply(cast, pull, center, follow, damageData);
         if (damageData.DamageAmount <= 0f || _currentHP <= 0f)
             return false;
 
         _currentHP = Mathf.Max(_currentHP - damageData.DamageAmount, 0f);
         _lastDamageData = damageData;
-        OnDamaged?.Invoke(damageData);
+        if (IsDead && Control.Active) Control.Release();
+        else if (!IsDead && pull != null) Control.Apply(cast, pull, center, follow, damageData);
+        bool previous = _pullReactionResolved;
+        _pullReactionResolved = pull != null;
+        try { OnDamaged?.Invoke(damageData); }
+        finally { _pullReactionResolved = previous; }
         OnHealthChange?.Invoke(_maxHP, _currentHP);
 
         HitDirectionType type = HitDirectionCalculator.GetHitDirection(
@@ -190,6 +218,8 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
 
     public bool ShouldEnterHitReaction(DamageData damageData)
     {
+        if (_pullReactionResolved) return false;
+
         if (_hitReactionResistanceRemaining > 0f)
             return damageData.StaggerLevel >= _resistantMinimumStaggerLevel;
 
@@ -221,19 +251,22 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
 
     public bool TryBeginAttack(EnemyAttackSO attackSO = null)
     {
+        if (!IsEngagedForCoordination || TargetTransform == null)
+            return false;
+
+        float maximumAttackReach = attackSO != null
+            ? attackSO.GetMaximumAttackReach()
+            : 0f;
+
         if (_attackTimingController != null)
         {
-            if (!_attackTimingController.IsReadyToAttack(this))
+            if (!_attackTimingController.IsReadyToAttack(this, maximumAttackReach))
                 return false;
         }
         else if (_fallbackAttackCooldownRemaining > 0f)
         {
             return false;
         }
-
-        float maximumAttackReach = attackSO != null
-            ? attackSO.GetMaximumAttackReach()
-            : 0f;
 
         if (_positioningController != null &&
             !_positioningController.CanBeginAttack(this, maximumAttackReach))
@@ -272,7 +305,9 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
             return;
 
         ReleaseAttackPermission();
+        EnemyAttackTimingController previous = _attackTimingController;
         _attackTimingController = controller;
+        previous?.Unregister(this);
     }
 
     public void ClearAttackTimingController(EnemyAttackTimingController controller)
@@ -336,6 +371,7 @@ public class EnemyCore : MonoBehaviour, IDamageable, IHitStopParticipant
     // 공격
     private void HandleAttack(EnemyAttackSO attackSO)
     {
+        if (Control.Active || IsDead) return;
         CompleteAttackWarpForImpact();
         HitboxPool.SpacingHitboxes(attackSO);
     }

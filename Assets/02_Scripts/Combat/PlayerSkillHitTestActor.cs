@@ -12,11 +12,13 @@ public sealed class PlayerSkillHitTestActor : MonoBehaviour, IDamageable, IHitSt
     public bool RejectDamage;
     public bool IsStopped;
     public bool IsHitStopped => IsStopped;
+    public int DamageAttempts;
     public int StopCount;
     public float Health = 1000f;
 
     public bool TryTakeDamage(DamageData data)
     {
+        DamageAttempts++;
         if (RejectDamage)
             return false;
         Hits.Add(data);

@@ -16,6 +16,7 @@ public static class SkillMotionVerification
     private static PlayerCore _player;
     private static PlayerSkillHitTestActor _victim;
     private static PlayableDirector _director;
+    private static PlayerAnimatorController _animatorController;
     private static Vector3 _start;
     private static double _deadline;
     private static int _phase;
@@ -30,6 +31,10 @@ public static class SkillMotionVerification
     private static StopProbe _attackerClock, _victimClock;
     private static float _largestDelta;
     private static int _expectedHits;
+    private static int _lastFrame = -1;
+    private static double _contentEndTime, _maxTimelineTime;
+    private static PlayerSkillSequenceSettings _sequenceSettings;
+    private static PlayerSkillDefinition _originalDefinition, _testDefinition;
     private static int StopFrames => Frames[_phase % Frames.Length];
 
     [InitializeOnLoadMethod]
@@ -57,7 +62,9 @@ public static class SkillMotionVerification
             File.Delete(Request);
             Run();
         }
-        if (!SessionState.GetBool(Pending, false) || !EditorApplication.isPlaying || Time.frameCount < 5) return;
+        // Initialize on the first ready frame so an unfocused Editor with
+        // runInBackground disabled can enable its verification clock immediately.
+        if (!SessionState.GetBool(Pending, false) || !EditorApplication.isPlaying) return;
         try
         {
             if (_player == null)
@@ -83,11 +90,28 @@ public static class SkillMotionVerification
                 box.size = Vector3.one * 100;
                 _victim = go.AddComponent<PlayerSkillHitTestActor>();
                 _director = _player.DirectorContainer.Directors[DirectorID.Skill];
-                _expectedHits = ((TimelineAsset)_director.playableAsset).GetOutputTracks()
+                var sequenceSettings = _director.GetComponent<PlayerSkillSequenceSettings>();
+                _sequenceSettings = sequenceSettings;
+                _originalDefinition = sequenceSettings != null ? sequenceSettings.Definition : null;
+                if (_originalDefinition != null)
+                {
+                    _testDefinition = Object.Instantiate(_originalDefinition);
+                    _testDefinition.hideFlags = HideFlags.HideAndDontSave;
+                    sequenceSettings.Definition = _testDefinition;
+                }
+                _contentEndTime = sequenceSettings != null
+                    ? sequenceSettings.GetContentEndTime(_director)
+                    : PlayerSkillSequenceSettings.TimelineDuration(_director);
+                if (_testDefinition != null) _contentEndTime = _testDefinition.Duration;
+                _expectedHits = _testDefinition != null
+                    ? _testDefinition.hits.Count(hit => hit != null && hit.enabled && hit.time <= _contentEndTime)
+                    : ((TimelineAsset)_director.playableAsset).GetOutputTracks()
                     .OfType<PlayerSkillHitTrack>().Where(t => !t.mutedInHierarchy)
-                    .Sum(t => t.GetMarkers().OfType<PlayerSkillHitMarker>().Count(m => m.time < 2.05));
+                    .Sum(t => t.GetMarkers().OfType<PlayerSkillHitMarker>()
+                        .Count(m => m.Enabled && m.time <= _contentEndTime));
                 if (_expectedHits == 0) throw new Exception("The skill needs active hit markers to exercise hit stop");
-                _player.Animator.GetComponent<PlayerAnimatorController>().OnAnimationTick += Sample;
+                _animatorController = _player.Animator.GetComponent<PlayerAnimatorController>();
+                _animatorController.OnAnimationTick += Sample;
                 var effect = new GameObject("Verification VFX", typeof(ParticleSystem));
                 effect.transform.SetParent(_player.transform, false);
                 _particle = effect.GetComponent<ParticleSystem>();
@@ -97,14 +121,22 @@ public static class SkillMotionVerification
                 Begin();
                 return;
             }
-            if (EditorApplication.timeSinceStartup > _deadline) throw new Exception("Skill motion timed out");
+            if (EditorApplication.timeSinceStartup > _deadline)
+                throw new Exception($"Skill motion timed out: phase={_phase}, targetFps={FrameRates[_phase / Frames.Length]}, " +
+                    $"stopFrames={StopFrames}, frame={Time.frameCount}, timeline={_director.time:F6}/{_contentEndTime:F6}, " +
+                    $"maxTimeline={_maxTimelineTime:F6}, director={_director.state}, waiting={_waiting}, " +
+                    $"hitStopped={_player.IsHitStopped}, skillActive={_player.StateMachine.IsSkillActive}, hits={_victim.Hits.Count}/{_expectedHits}");
+            // Editor updates can outnumber gameplay frames, especially while Studio windows repaint.
+            if (_lastFrame == Time.frameCount) return;
+            _lastFrame = Time.frameCount;
+            _maxTimelineTime = Math.Max(_maxTimelineTime, _director.time);
             _largestDelta = Mathf.Max(_largestDelta, Time.unscaledDeltaTime);
-            if (!_waiting && _director.time > 2.0 && !_player.IsHitStopped)
-            {
-                _waiting = true;
-                _deadline = EditorApplication.timeSinceStartup + 1;
-            }
-            if (!_waiting || _director.state == PlayState.Playing) return;
+            // The Timeline now ends at its authored duration and can have recovery afterward.
+            // Do not replace the cast watchdog with the old one-second window at 2.0 seconds.
+            // A stopped director resets time, so state readiness also observes a completed cast.
+            _waiting |= _director.time >= _contentEndTime || !_player.StateMachine.IsSkillActive;
+            if (!_waiting || _director.state == PlayState.Playing || _player.IsHitStopped ||
+                _player.StateMachine.IsSkillActive) return;
             float distance = Vector3.ProjectOnPlane(_player.GetComponent<Rigidbody>().position - _start, Vector3.up).magnitude;
             File.AppendAllText(Report, $"targetFps={FrameRates[_phase / Frames.Length]} frames={StopFrames} distance={distance:F6} hits={_victim.Hits.Count} raw={_rawMotion.magnitude:F6} stoppedMotion={_stoppedMotion.magnitude:F6}\n");
             if (_phase == 0) _baseline = distance;
@@ -130,6 +162,8 @@ public static class SkillMotionVerification
     {
         _rawMotion = _stoppedMotion = Vector3.zero;
         _largestDelta = 0;
+        _maxTimelineTime = 0;
+        _lastFrame = Time.frameCount;
         Application.targetFrameRate = FrameRates[_phase / Frames.Length];
         _player.transform.position = new Vector3(1000, 1000, 1000);
         _player.GetComponent<Rigidbody>().position = _player.transform.position;
@@ -145,12 +179,24 @@ public static class SkillMotionVerification
             field.FindPropertyRelative("_triggerInteraction").intValue = (int)QueryTriggerInteraction.Collide;
         }
         settings.ApplyModifiedPropertiesWithoutUndo();
+        if (_testDefinition != null)
+            foreach (var hit in _testDefinition.hits)
+            {
+                if (hit == null) continue;
+                hit.hitStopFrames = StopFrames;
+                hit.hitStopMode = AttackHitStopMode.AttackerAndVictims;
+                hit.targetLayers = 1 << 6;
+                hit.triggerInteraction = QueryTriggerInteraction.Collide;
+            }
         _victim.Hits.Clear();
         _start = _player.GetComponent<Rigidbody>().position;
         _player.AddSkillGauge(100);
         _player.StateMachine.Transition(_player.StateMachine.SkillState);
         Physics.SyncTransforms();
-        _deadline = EditorApplication.timeSinceStartup + 45;
+        var sequenceSettings = _director.GetComponent<PlayerSkillSequenceSettings>();
+        double recovery = _testDefinition != null ? _testDefinition.RecoveryDuration : sequenceSettings != null ? sequenceSettings.RecoveryDuration : 0d;
+        double expectedSeconds = _contentEndTime / (_testDefinition != null ? _testDefinition.PlaybackSpeed : 1d) + recovery + (_expectedHits + 1) * (StopFrames + 1d) / 60d;
+        _deadline = EditorApplication.timeSinceStartup + Math.Clamp(expectedSeconds * 8d + 10d, 45d, 180d);
         _waiting = false;
         _attackerClock = new StopProbe();
         _victimClock = new StopProbe();
@@ -159,9 +205,10 @@ public static class SkillMotionVerification
 
     private static void Sample()
     {
+        if (_player == null || _player.Animator == null) return;
         _rawMotion += _player.Animator.deltaPosition;
         if (_player.IsHitStopped) _stoppedMotion += _player.Animator.deltaPosition;
-        if (_player.IsHitStopped && _particle.main.simulationSpeed != 0)
+        if (_player.IsHitStopped && _particle != null && _particle.main.simulationSpeed != 0)
             _failed = true;
     }
 
@@ -190,6 +237,13 @@ public static class SkillMotionVerification
     private static void Finish(Exception exception)
     {
         SessionState.SetBool(Pending, false);
+        // ExitPlaymode completes asynchronously; remove callbacks before clearing their owner.
+        if (_animatorController != null) _animatorController.OnAnimationTick -= Sample;
+        _animatorController = null;
+        if (_sequenceSettings != null) _sequenceSettings.Definition = _originalDefinition;
+        if (_testDefinition != null) Object.DestroyImmediate(_testDefinition);
+        _testDefinition = _originalDefinition = null;
+        _sequenceSettings = null;
         Application.targetFrameRate = _oldFps;
         QualitySettings.vSyncCount = _oldVsync;
         Application.runInBackground = _oldRunInBackground;

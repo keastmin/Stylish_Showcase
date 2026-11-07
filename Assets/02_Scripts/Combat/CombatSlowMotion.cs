@@ -3,8 +3,10 @@ using UnityEngine;
 // 한 요청의 진입/유지/복귀. 게임 상태와 독립적으로 실제 시간으로 진행합니다.
 public sealed class CombatSlowMotion
 {
-    private float _start;
-    private float _target;
+    // A delayed request may be ticked before Begin. Its idle endpoint must be
+    // normal speed so the first fade starts at 1, rather than the default 0.
+    private float _start = 1f;
+    private float _target = 1f;
     private float _duration;
     private float _elapsed;
     private AnimationCurve _curve;

@@ -8,11 +8,13 @@ public class EnemyCompositeState : EnemyStateBase
 
     protected void TransitionSubState(EnemyStateBase nextState)
     {
-        if (nextState == null)
+        if (nextState == null || ReferenceEquals(CurrentSubState, nextState))
             return;
 
+        CurrentSubState?.ClearAccumulatedMotion();
         CurrentSubState?.Exit();
         CurrentSubState = nextState;
+        CurrentSubState.ClearAccumulatedMotion();
         CurrentSubState.Enter();
     }
 
@@ -40,6 +42,7 @@ public class EnemyCompositeState : EnemyStateBase
 
     public override void Exit()
     {
+        CurrentSubState?.ClearAccumulatedMotion();
         CurrentSubState?.Exit();
         CurrentSubState = null;
         base.Exit();

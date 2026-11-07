@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineBlenderSettings
   CustomBlends:
   - From: Player Freelook Cinemachine
-    To: Skill Camera 1
+    To: Skill Camera
     Blend:
       Style: 1
       Time: 0.2
@@ -24,7 +24,7 @@ MonoBehaviour:
         m_PreInfinity: 0
         m_PostInfinity: 0
         m_RotationOrder: 0
-  - From: Skill Camera 1
+  - From: Skill Camera
     To: Player Freelook Cinemachine
     Blend:
       Style: 1

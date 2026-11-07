@@ -23,6 +23,12 @@ public class EnemyCloseAttackNoticeState : EnemyAttackNoticeState
     {
         base.UpdateTick();
 
+        if (Core.TargetTransform == null)
+        {
+            Core.StateMachine.Transition(Core.StateMachine.IdleState);
+            return;
+        }
+
         Core.UpdateAttackTargeting();
         Core.Rotator.RotateToward(
             Core.AttackTargeting.TargetForward,
@@ -36,7 +42,6 @@ public class EnemyCloseAttackNoticeState : EnemyAttackNoticeState
             return;
         }
 
-        base.UpdateTick();
     }
 
     public override void Exit()

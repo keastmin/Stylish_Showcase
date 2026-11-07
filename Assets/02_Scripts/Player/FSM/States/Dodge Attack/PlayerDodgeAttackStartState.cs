@@ -2,6 +2,9 @@ using UnityEngine;
 
 public class PlayerDodgeAttackStartState : PlayerDodgeAttackState
 {
+    private static readonly int StartStateHash = Animator.StringToHash("Dodge Attack Start");
+    private const float MaxApproachSpeed = 20f;
+
     protected override DirectorID AttackDirectorID => DirectorID.DodgeAttackStart;
 
     protected override string AnimationTrigger => "IsDodgeAttack";
@@ -12,31 +15,23 @@ public class PlayerDodgeAttackStartState : PlayerDodgeAttackState
     {
     }
 
-    public override void Enter()
+    protected override float WarpForwardDelta(float forwardDelta, float remaining)
     {
-        EnemyCore target = Core.DodgeAttackTarget;
-        if (target != null)
-        {
-            Vector3 direction = target.transform.position - Core.transform.position;
-            direction.y = 0f;
-            if (direction.sqrMagnitude > Mathf.Epsilon)
-                Core.Rotator.RotateImmediately(direction);
-        }
+        Animator animator = Core.Animator;
+        AnimatorStateInfo state = animator.IsInTransition(0)
+            ? animator.GetNextAnimatorStateInfo(0)
+            : animator.GetCurrentAnimatorStateInfo(0);
+        if (state.shortNameHash != StartStateHash)
+            return forwardDelta;
 
-        base.Enter();
-    }
+        // Close the gap over the remaining windup, while limiting extra travel
+        // for distant attackers. The shared movement step clamps to the hurtbox.
+        float animationStep = Time.fixedDeltaTime * animator.speed * state.speed * state.speedMultiplier;
+        if (animationStep <= 0f)
+            return forwardDelta;
 
-    public override void UpdateTick()
-    {
-        // 자신을 Perfect Dodge로 진입시킨 주체의 공격을 한 대상의 Hurtbox를 향해서
-        // 이 상태가 끝나기 전에 Motion Warping 완료가 되어야 함
-        MotionWarpToEnemyHurtbox();
-
-        base.UpdateTick();
-    }
-
-    private void MotionWarpToEnemyHurtbox()
-    {
-
+        float timeLeft = state.length * (1f - Mathf.Clamp01(state.normalizedTime));
+        float approachDelta = remaining * animationStep / Mathf.Max(timeLeft, animationStep);
+        return Mathf.Max(forwardDelta, Mathf.Min(approachDelta, MaxApproachSpeed * animationStep));
     }
 }

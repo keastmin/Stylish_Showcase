@@ -61,6 +61,7 @@ public class GlobalVolumeEffectController : MonoBehaviour
 
     private void PerfectDodgeVolumeEffectStart(EnemyCore enemy)
     {
+        if (_subscribedPlayer != null && _subscribedPlayer.DodgeDefinition != null) return;
         if (!isActiveAndEnabled || _vignette == null)
             return;
 

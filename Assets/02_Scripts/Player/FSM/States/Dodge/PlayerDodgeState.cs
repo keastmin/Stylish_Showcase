@@ -20,6 +20,12 @@ public abstract class PlayerDodgeState : PlayerStateBase
         // 애니메이션 재생
         Core.Animator.SetTrigger(AnimationTrigger);
 
+        if (Core.Dodge?.Configured == true)
+        {
+            Core.Dodge.BeginDodge(this is PlayerBackDodgeState);
+            return;
+        }
+
         // 회피 판별
         if (Core.IsPerfectDodge(out EnemyCore enemy))
         {
@@ -50,7 +56,7 @@ public abstract class PlayerDodgeState : PlayerStateBase
     {
         Core.AnimationEvent.OnPerfectDodgeEnd -= HandlePerfectDodgeEnd;
         // 자연 종료 후 진행 중인 FadeOut은 유지하고, 도중에 다른 상태로 나가면 정리합니다.
-        if (Core.IsPerfectDodgeActive)
+        if (Core.Dodge?.Configured != true && Core.IsPerfectDodgeActive)
             Core.EndPerfectDodge(true);
         // 초기화
         IsPerfectDodge = false;
@@ -64,6 +70,7 @@ public abstract class PlayerDodgeState : PlayerStateBase
 
     private void HandlePerfectDodgeEnd()
     {
+        if (Core.Dodge?.Configured == true) { Core.Dodge.AnimationPerfectEnd(); return; }
         if (!IsPerfectDodge || IsPerfectDodgeEnd)
             return;
         IsPerfectDodgeEnd = true;

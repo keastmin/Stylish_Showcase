@@ -1,4 +1,3 @@
-using Unity.Cinemachine;
 using UnityEngine;
 
 public class EnemyEngageState : EnemyCompositeState
@@ -66,7 +65,6 @@ public class EnemyEngageState : EnemyCompositeState
             ResetDecisionTime();
         }
 
-        base.UpdateTick();
     }
 
     public override void Exit()

@@ -77,6 +77,19 @@ public sealed class HitstopCoordinator : MonoBehaviour
         return _instance;
     }
 
+    // A priority action interrupts only this participant's current/queued hold.
+    // Victims retain their remaining hitstop and future hits can start a new hold.
+    public static void Cancel(IHitStopParticipant participant)
+    {
+        if (ReferenceEquals(participant, null)) return;
+        if (_instance != null)
+        {
+            _instance._releaseTimes.Remove(participant);
+            _instance._pendingDurations.Remove(participant);
+        }
+        if (!IsDestroyed(participant)) participant.EndHitStop();
+    }
+
     private void Awake()
     {
         if (_instance != null && _instance != this)
@@ -94,7 +107,7 @@ public sealed class HitstopCoordinator : MonoBehaviour
         if (_releaseTimes.Count == 0)
             return;
 
-        double now = Time.unscaledTimeAsDouble;
+        double now = VirtualCutscenePlayback.CombatUnscaledTime;
         _releaseBuffer.Clear();
 
         foreach (KeyValuePair<IHitStopParticipant, double> pair in _releaseTimes)
@@ -144,7 +157,7 @@ public sealed class HitstopCoordinator : MonoBehaviour
         // Timeline notifications run inside animation evaluation. Freezing an
         // Animator there discards motion from the very sample that caused the hit.
         // Finish that sample (including OnAnimatorMove) before freezing everyone.
-        double now = Time.unscaledTimeAsDouble;
+        double now = VirtualCutscenePlayback.CombatUnscaledTime;
         _startBuffer.Clear();
         _startBuffer.AddRange(_pendingDurations);
         _pendingDurations.Clear();

@@ -15,6 +15,15 @@ public sealed class PlayerSkillAttackReceiver : MonoBehaviour, INotificationRece
     [SerializeField] private Transform _hitboxRoot;
     [SerializeField] private AttackDamageField[] _damageFields = new AttackDamageField[DamageFieldCount];
     private PlayableDirector _director;
+    private object _runtimeOwner;
+
+    public void SetRuntimeOwner(object owner) => _runtimeOwner = owner;
+    public void ReleaseRuntimeOwner(object owner) { if (ReferenceEquals(_runtimeOwner, owner)) _runtimeOwner = null; }
+    public void PlayHitShake(float force)
+    {
+        if (_skillHitImpulse != null && force > 0f)
+            _skillHitImpulse.GenerateImpulseWithForce(force);
+    }
 
     public AttackDamageField GetDamageField(int number) =>
         _damageFields != null && number >= 1 && number <= _damageFields.Length ? _damageFields[number - 1] : null;
@@ -30,8 +39,9 @@ public sealed class PlayerSkillAttackReceiver : MonoBehaviour, INotificationRece
 
     public void OnNotify(Playable origin, INotification notification, object context)
     {
-        if (!Application.isPlaying || !isActiveAndEnabled ||
+        if (_runtimeOwner != null || !Application.isPlaying || !isActiveAndEnabled ||
             notification is not PlayerSkillHitMarker marker ||
+            !marker.Enabled ||
             _director == null || _director.state != PlayState.Playing ||
             marker.parent is not PlayerSkillHitTrack ||
             marker.parent.timelineAsset != _director.playableAsset ||

@@ -9,8 +9,13 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
     [SerializeField] private Animator _animator;
     [SerializeField] private PlayerAnimatorController _animatorController;
 
+    [Header("Dodge Charges")]
+    [SerializeField, Min(0.01f), Tooltip("Each accepted dodge restarts this shared timer. Expiry restores both charges.")]
+    private float _dodgeCooldownDuration = 1f;
+
     [Header("Perfect Dodge")]
     [SerializeField, InspectorName("Slow Motion Settings")] private PerfectDodgeSettings _perfectDodge = new();
+    [SerializeField, Tooltip("연결을 해제하면 기존 회피 설정을 사용합니다.")] private PlayerDodgeDefinition _dodgeDefinition;
     [SerializeField] private UnityEvent _onPerfectDodgeStarted;
     [SerializeField] private UnityEvent _onPerfectDodgeEnded;
     [SerializeField] private UnityEvent _onDodgeAttackStarted;
@@ -18,6 +23,9 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
     [Header("Skill")]
     [SerializeField] private float _skillUsageGauge = 70f;
     [SerializeField] private float _perfectDodgeSkillGauge = 5f;
+
+    [Header("Q Ultimate")]
+    [SerializeField] private PlayerUltimateDefinition _ultimateDefinition;
 
     // 컴포넌트
     private TimelineDirectorContainer _directorContainer;
@@ -33,6 +41,8 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
     // 기능
     private PlayerStateMachine _stateMachine;
     private DirectionCalculator _dirCalculator;
+    private readonly PlayerDodgeChargePool _dodgeCharges = new();
+    private double _lastDodgeCooldownTickTime;
 
     private bool _isHitStopped;
     private bool _isStartingDodgeAttack;
@@ -62,12 +72,33 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
     public PlayerStateMachine StateMachine => _stateMachine;
     public DirectionCalculator DirCalculator => _dirCalculator;
     public bool IsHitStopped => _isHitStopped;
-    public bool IsPerfectDodgeActive => _isPerfectDodgeActive;
-    public bool IsPerfectDodgeWindowOpen { get; private set; }
-    public bool IsInvulnerable => _isPerfectDodgeActive || _isStartingDodgeAttack || _stateMachine?.IsInvulnerable == true;
-    public EnemyCore PerfectDodgeSource { get; private set; }
+    public PlayerDodgeDefinition DodgeDefinition => _dodgeDefinition;
+    public PlayerDodgeRuntime Dodge { get; private set; }
+    public bool IsPerfectDodgeActive => Dodge?.Configured == true ? Dodge.PerfectActive : _isPerfectDodgeActive;
+    private bool _legacyDodgeWindow;
+    public bool IsPerfectDodgeWindowOpen { get => Dodge?.Configured == true ? Dodge.WindowOpen : _legacyDodgeWindow; private set => _legacyDodgeWindow = value; }
+    public bool IsInvulnerable => (Dodge?.Configured == true ? Dodge.Invulnerable : _isPerfectDodgeActive) || _isStartingDodgeAttack || _stateMachine?.IsInvulnerable == true;
+    private EnemyCore _legacyDodgeSource;
+    public EnemyCore PerfectDodgeSource { get => Dodge?.Configured == true ? (Dodge.PerfectActive ? Dodge.Source : null) : _legacyDodgeSource; private set => _legacyDodgeSource = value; }
     public EnemyCore DodgeAttackTarget { get; private set; }
     public bool IsSkillEnable => (_currentSkillGauge >= _skillUsageGauge); // 스킬 사용 가능
+    public PlayerUltimateDefinition UltimateDefinition => _ultimateDefinition;
+    public PlayerUltimateRuntime Ultimate { get; private set; }
+    public bool CanBeginUltimate => isActiveAndEnabled && _currentHealth > 0f &&
+        Time.timeScale > 0f && !VirtualCutscenePlayback.IsPlaying && !ProjectR.UI.PauseSettingsController.InputBlocked &&
+        Ultimate?.IsReady == true && _stateMachine?.CanStartUltimate == true;
+
+    // UI snapshots support HUDs that are enabled or rebound after combat has started.
+    public float MaxHealth => _maxHealth;
+    public float CurrentHealth => _currentHealth;
+    public float MaxSkillGauge => 100f;
+    public float CurrentSkillGauge => _currentSkillGauge;
+    public float SkillGaugeCost => _skillUsageGauge;
+    public int DodgeCharges => _dodgeCharges.Charges;
+    public int MaxDodgeCharges => PlayerDodgeChargePool.Capacity;
+    public float DodgeCooldownRemaining => _dodgeCharges.CooldownRemaining;
+    public float DodgeCooldownDuration => Mathf.Max(0.01f, _dodgeCooldownDuration);
+    public bool IsDodgeAvailable => _dodgeCharges.IsAvailable;
 
     // 캐싱
     public DamageData LastDamageData { get; private set; } // 마지막에 피해를 입은 데이터
@@ -80,6 +111,7 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
     public Func<EnemyCore> OnPerfectDodgeCheck; // 완벽 회피라면 완벽회피를 하게 한 대상을 반환
     public event Action<float, float> OnHealthChange; // 체력 변화가 있을 때 호출되는 이벤트, <최대 체력, 현재 체력>
     public event Action<float, float> OnSkillGaugeChange; // 스킬 게이지 변화가 있을 때 호출되는 이벤트, <최대 게이지, 현재 게이지>
+    public event Action<int, float> OnDodgeChargesChanged; // 남은 횟수, 공용 재충전 잔여 초
 
     private void Awake()
     {
@@ -106,6 +138,8 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
 
         TryGetComponent(out _targetDetector);
         TryGetComponent(out _trailEffect);
+        Ultimate = new PlayerUltimateRuntime(this);
+        Dodge = new PlayerDodgeRuntime(this);
         _stateMachine = new PlayerStateMachine(this);
         _dirCalculator = new DirectionCalculator();
         CombatVfxTime.RegisterHierarchy(gameObject);
@@ -113,6 +147,8 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
 
     private void OnEnable()
     {
+        // Re-enabling does not refill charges or count time spent disabled.
+        _lastDodgeCooldownTickTime = Time.realtimeSinceStartupAsDouble;
         CombatTimeController.ScaleChanged += ApplyCombatSpeed;
         ApplyCombatSpeed(CombatTimeController.Scale);
     }
@@ -127,14 +163,20 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
 
     private void Update()
     {
+        if (VirtualCutscenePlayback.IsPlaying || ProjectR.UI.PauseSettingsController.InputBlocked) return;
+        Ultimate?.TickCooldown(Time.deltaTime);
+        // Q interrupts gameplay before hitstop and counterattack input gates.
+        if (_inputCollector.IsInputUltimate && TryBeginUltimate()) return;
+        TickDodgeCooldown(CalculateDodgeCooldownDelta(Time.unscaledDeltaTime, Time.realtimeSinceStartupAsDouble));
         TickPerfectDodge(Time.unscaledDeltaTime);
+        Dodge?.Tick(Time.unscaledDeltaTime);
 
         // 입력은 슬로우 배율과 무관하게 먼저 처리합니다. 반격은 기존 히트스탑을 해제하지 않습니다.
         if (IsPerfectDodgeWindowOpen && _inputCollector.IsInputAttack && TryBeginDodgeAttack())
             return;
 
         // 지연 구간의 공격 입력이 일반 공격으로 새지 않게 합니다.
-        if (_isPerfectDodgeActive && !IsPerfectDodgeWindowOpen && _inputCollector.IsInputAttack)
+        if (IsPerfectDodgeActive && !IsPerfectDodgeWindowOpen && _inputCollector.IsInputAttack)
             return;
 
         if (_isHitStopped)
@@ -145,6 +187,7 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
 
     private void FixedUpdate()
     {
+        if (VirtualCutscenePlayback.IsPlaying || ProjectR.UI.PauseSettingsController.InputBlocked) return;
         if (_isHitStopped)
             return;
 
@@ -153,14 +196,14 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
 
     private void LateUpdate()
     {
-        if (_isHitStopped)
-            return;
-
-        StateMachine.LateTick();
+        if (VirtualCutscenePlayback.IsPlaying || ProjectR.UI.PauseSettingsController.InputBlocked) return;
+        if (!_isHitStopped) StateMachine.LateTick();
+        Dodge?.LateTick();
     }
 
     private void OnAnimationTickLoop()
     {
+        if (VirtualCutscenePlayback.IsPlaying || ProjectR.UI.PauseSettingsController.InputBlocked) return;
         if (_isHitStopped)
             return;
 
@@ -169,10 +212,14 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
 
     private void OnDisable()
     {
+        PlayerUltimateExitBlend.Cancel(_animator);
+        Ultimate?.Stop();
+        _stateMachine?.SkillState?.StopRuntime();
         EndPerfectDodge(true);
+        Dodge?.Dispose();
         DodgeAttackTarget = null;
         _targetDetector?.ClearBasicAttackTarget();
-        EndHitStop();
+        HitstopCoordinator.Cancel(this);
         CombatTimeController.ScaleChanged -= ApplyCombatSpeed;
         ApplyCombatSpeed(1f);
     }
@@ -202,8 +249,8 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
     private void ApplyCombatSpeed(float scale)
     {
         float effectiveScale = _isHitStopped ? 0f : scale;
-        _animator.speed = _baseAnimatorSpeed * effectiveScale;
-        _directorContainer.SetCombatSpeed(effectiveScale);
+        _animator.speed = _baseAnimatorSpeed * effectiveScale * (Dodge?.Configured == true ? Dodge.MotionMultiplier : 1f);
+        _directorContainer.SetCombatSpeed(effectiveScale * (Dodge?.Configured == true ? Dodge.MotionMultiplier : 1f));
     }
 
     // 피해를 입음
@@ -235,6 +282,7 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
 
     public void BeginPerfectDodge(EnemyCore source)
     {
+        if (Dodge?.Configured == true) { Dodge.ForcePerfect(source); return; }
         if (source == null || !source.isActiveAndEnabled || source.CurrentHP <= 0f)
             return;
 
@@ -250,6 +298,7 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
 
     private void TickPerfectDodge(float realDeltaTime)
     {
+        if (Dodge?.Configured == true) return;
         if (!_isPerfectDodgeActive)
             return;
 
@@ -292,6 +341,7 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
 
     public void EndPerfectDodge(bool immediate = false)
     {
+        if (Dodge?.Configured == true) { Dodge.EndPerfect(immediate); return; }
         bool wasSlowMotionActive = _isPerfectDodgeSlowMotionActive;
         _isPerfectDodgeActive = false;
         _isPerfectDodgeSlowMotionActive = false;
@@ -309,6 +359,22 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
 
     public bool TryBeginDodgeAttack()
     {
+        if (Dodge?.Configured == true)
+        {
+            EnemyCore studioTarget = Dodge.Source;
+            if (!Dodge.PrepareCounter()) return false;
+            DodgeAttackTarget = studioTarget;
+            _isStartingDodgeAttack = true;
+            try
+            {
+                Dodge.CounterPrepared();
+                StateMachine.Transition(StateMachine.DodgeAttackStartState);
+            }
+            finally { _isStartingDodgeAttack = false; }
+            OnDodgeAttackStarted?.Invoke(studioTarget);
+            _onDodgeAttackStarted?.Invoke();
+            return true;
+        }
         if (!IsPerfectDodgeWindowOpen)
             return false;
         EnemyCore target = PerfectDodgeSource;
@@ -337,6 +403,54 @@ public class PlayerCore : MonoBehaviour, IHitStopParticipant, IDamageable
     }
 
     public void ClearDodgeAttackTarget() => DodgeAttackTarget = null;
+
+    internal void NotifyDodgeSuccess() => AddSkillGauge(_perfectDodgeSkillGauge);
+    internal void NotifyDodgeSlowStarted(EnemyCore source)
+    {
+        OnPerfectDodgeStarted?.Invoke(source);
+        _onPerfectDodgeStarted?.Invoke();
+        if (Dodge?.UsesLegacyAfterimage != false) TrailEffect?.ActiveDodgeEffect();
+    }
+    internal void NotifyDodgeWindowEnded()
+    {
+        OnPerfectDodgeEnded?.Invoke();
+        _onPerfectDodgeEnded?.Invoke();
+    }
+    internal void RefreshDodgeAnimationSpeed() => ApplyCombatSpeed(CombatTimeController.Scale);
+
+    public bool TryBeginUltimate()
+    {
+        if (!CanBeginUltimate) return false;
+        return _stateMachine.Transition(_stateMachine.UltimateState);
+    }
+
+    // Only the FSM entry gate consumes charges, before the previous state exits.
+    internal bool TryConsumeDodgeCharge()
+    {
+        if (Time.timeScale <= 0f || !_dodgeCharges.TryConsume(DodgeCooldownDuration)) return false;
+        // A transition can be accepted after Update, e.g. from animation events.
+        // Its next tick must not include the part of the frame before this use.
+        _lastDodgeCooldownTickTime = Time.realtimeSinceStartupAsDouble;
+        OnDodgeChargesChanged?.Invoke(DodgeCharges, DodgeCooldownRemaining);
+        return true;
+    }
+
+    private void TickDodgeCooldown(float unscaledDeltaTime)
+    {
+        // Custom combat slow motion and hitstop do not extend the recharge;
+        // a global pause and a disabled PlayerCore do not advance it.
+        if (Time.timeScale <= 0f) return;
+        if (_dodgeCharges.Tick(unscaledDeltaTime))
+            OnDodgeChargesChanged?.Invoke(DodgeCharges, DodgeCooldownRemaining);
+    }
+
+    private float CalculateDodgeCooldownDelta(float unscaledDeltaTime, double now)
+    {
+        float elapsedSinceLastTickOrUse = (float)Math.Max(0d, now - _lastDodgeCooldownTickTime);
+        // Update the clock even while globally paused, so paused time cannot accrue.
+        _lastDodgeCooldownTickTime = now;
+        return Mathf.Min(Mathf.Max(0f, unscaledDeltaTime), elapsedSinceLastTickOrUse);
+    }
 
     // 스킬 게이지 더하기
     public void AddSkillGauge(float additive)

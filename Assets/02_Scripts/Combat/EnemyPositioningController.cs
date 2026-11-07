@@ -11,9 +11,8 @@ public enum EnemyPositioningAction
 }
 
 /// <summary>
-/// Coordinates enemies around a shared target without assigning hard formation slots.
-/// Each enemy receives a drifting comfort radius and orbit preference, while separation
-/// and attack-lane priorities temporarily override those preferences when necessary.
+/// Reserves stable approach sectors around each target. Waiting enemies keep space,
+/// while a short preparation lease lets the next attacker approach and clear its lane.
 /// </summary>
 [DefaultExecutionOrder(-90)]
 public class EnemyPositioningController : MonoBehaviour
@@ -22,7 +21,7 @@ public class EnemyPositioningController : MonoBehaviour
     [SerializeField] private List<EnemyCore> _enemies = new();
     [SerializeField] private bool _autoDiscoverEnemies = true;
 
-    [Header("Soft Combat Envelope")]
+    [Header("Combat Envelope")]
     [SerializeField, Min(0f)] private float _minimumCombatRadius = 2.1f;
     [SerializeField, Min(0f)] private float _maximumCombatRadius = 4.4f;
     [SerializeField, Min(0f)] private float _radialDeadZone = 0.65f;
@@ -30,11 +29,23 @@ public class EnemyPositioningController : MonoBehaviour
     [SerializeField] private Vector2 _preferenceChangeInterval = new(2.4f, 5.5f);
     [SerializeField] private Vector2 _actionHoldInterval = new(0.35f, 0.9f);
 
+    [Header("Stable Surround Positions")]
+    [SerializeField, Range(4, 16)] private int _sectorsPerRing = 10;
+    [SerializeField, Min(0.5f)] private float _holdingRingSpacing = 1.5f;
+    [SerializeField, Min(0.1f)] private float _slotArrivalDistance = 0.45f;
+    [SerializeField, Min(1f)] private float _targetRelocationDistance = 6f;
+
     [Header("Neighbour Avoidance")]
     [SerializeField, Min(0.1f)] private float _personalSpaceRadius = 1.35f;
     [SerializeField, Range(0f, 4f)] private float _separationInfluence = 2.2f;
     [SerializeField, Min(0f)] private float _motionLookAhead = 1.25f;
     [SerializeField, Range(0f, 1f)] private float _motionSteeringStrength = 0.72f;
+
+    [Header("World Obstacle Avoidance")]
+    [SerializeField, Tooltip("Default and Ground contain the arena walls and floor. Character colliders are filtered separately.")]
+    private LayerMask _obstacleLayers = (1 << 0) | (1 << 7);
+    [SerializeField, Min(0.05f)] private float _obstacleProbeRadius = 0.3f;
+    [SerializeField, Min(0.1f)] private float _obstacleProbeHeight = 0.75f;
 
     [Header("Attack Lane")]
     [SerializeField, Min(0f)] private float _minimumAttackDistance = 1.15f;
@@ -59,16 +70,23 @@ public class EnemyPositioningController : MonoBehaviour
         public Vector3 YieldDirection;
         public EnemyPositioningAction Action;
         public Vector3 SmoothedAvoidanceVelocity;
+        public int SlotIndex = -1;
+        public Transform SlotTarget;
+        public Vector3 SlotAnchorPosition;
+        public float NextSlotProbeTime;
+        public int BlockedSlotProbeCount;
     }
 
     private static readonly List<EnemyPositioningController> ActiveControllers = new();
 
     private readonly Dictionary<EnemyCore, AgentState> _agentStates = new();
     private readonly List<EnemyCore> _cleanupBuffer = new();
+    private readonly RaycastHit[] _obstacleHits = new RaycastHit[32];
 
     private EnemyCore _committedAttacker;
     private EnemyCore _laneRequester;
     private float _laneRequestUntil;
+    private float _laneRequestReach;
     private float _combatClock;
 
     public EnemyCore CommittedAttacker => _committedAttacker;
@@ -86,6 +104,9 @@ public class EnemyPositioningController : MonoBehaviour
 
     private void Update()
     {
+        if (VirtualCutscenePlayback.IsPlaying || ProjectR.UI.PauseSettingsController.InputBlocked)
+            return;
+
         _combatClock += CombatTimeController.DeltaTime;
         CleanupInvalidEnemies();
 
@@ -93,7 +114,7 @@ public class EnemyPositioningController : MonoBehaviour
             NotifyAttackEnded(_committedAttacker);
 
         if (_laneRequester != null &&
-            (_combatClock >= _laneRequestUntil || !IsAvailable(_laneRequester)))
+            (_combatClock >= _laneRequestUntil || !_laneRequester.IsEngagedForCoordination))
         {
             _laneRequester = null;
         }
@@ -119,6 +140,10 @@ public class EnemyPositioningController : MonoBehaviour
         if (enemy == null)
             return null;
 
+        if (enemy.PositioningController != null && enemy.PositioningController.isActiveAndEnabled &&
+            enemy.PositioningController.gameObject.scene == enemy.gameObject.scene)
+            return enemy.PositioningController;
+
         EnemyPositioningController closest = null;
         float closestSqrDistance = float.PositiveInfinity;
 
@@ -130,6 +155,12 @@ public class EnemyPositioningController : MonoBehaviour
                 ActiveControllers.RemoveAt(i);
                 continue;
             }
+
+            if (controller.gameObject.scene != enemy.gameObject.scene)
+                continue;
+
+            if (controller._enemies.Contains(enemy))
+                return controller;
 
             float sqrDistance = (controller.transform.position - enemy.transform.position).sqrMagnitude;
             if (sqrDistance >= closestSqrDistance)
@@ -158,23 +189,30 @@ public class EnemyPositioningController : MonoBehaviour
 
     public void Unregister(EnemyCore enemy)
     {
-        if (enemy == null)
+        // Unity's destroyed-object equality reports null while the managed key
+        // still exists in our collections. Always remove that exact registration.
+        if (ReferenceEquals(enemy, null))
             return;
 
-        if (_committedAttacker == enemy)
+        if (ReferenceEquals(_committedAttacker, enemy))
             _committedAttacker = null;
 
-        if (_laneRequester == enemy)
+        if (ReferenceEquals(_laneRequester, enemy))
             _laneRequester = null;
 
         _agentStates.Remove(enemy);
-        enemy.ClearPositioningController(this);
+        _enemies.RemoveAll(candidate => ReferenceEquals(candidate, enemy));
+        if (enemy != null)
+            enemy.ClearPositioningController(this);
     }
 
     public EnemyPositioningAction GetRecommendedAction(EnemyCore enemy)
     {
-        if (!TryGetActiveState(enemy, out AgentState state) || enemy.TargetTransform == null)
+        if (!TryGetActiveState(enemy, out AgentState state) || enemy.TargetTransform == null ||
+            !enemy.IsEngagedForCoordination)
             return EnemyPositioningAction.Hold;
+
+        EnsureSlot(enemy, state);
 
         if (_combatClock < state.NextActionTime)
             return state.Action;
@@ -183,13 +221,14 @@ public class EnemyPositioningController : MonoBehaviour
 
         Vector3 steering = CalculateSteering(enemy, state);
         state.Action = ResolveAction(enemy, steering, state.Action);
-        state.NextActionTime = _combatClock + RandomInRange(_actionHoldInterval);
+        state.NextActionTime = _combatClock + Mathf.Min(0.35f, RandomInRange(_actionHoldInterval));
         return state.Action;
     }
 
     public bool CanBeginAttack(EnemyCore enemy, float attackMaximumReach = 0f)
     {
-        if (!TryGetActiveState(enemy, out _) || enemy.TargetTransform == null)
+        if (!TryGetActiveState(enemy, out _) || enemy.TargetTransform == null ||
+            !enemy.IsEngagedForCoordination)
             return false;
 
         if (_committedAttacker != null)
@@ -197,29 +236,59 @@ public class EnemyPositioningController : MonoBehaviour
 
         Vector3 toTarget = Flatten(enemy.TargetTransform.position - enemy.transform.position);
         float distance = toTarget.magnitude;
-        float maximumAttackDistance = attackMaximumReach > 0f
-            ? attackMaximumReach
-            : _maximumAttackDistance;
+        float maximumAttackDistance = GetAttackReach(attackMaximumReach);
 
         if (distance < _minimumAttackDistance || distance > maximumAttackDistance)
         {
-            TryClaimLaneRequest(enemy);
+            TryClaimLaneRequest(enemy, maximumAttackDistance);
             return false;
         }
 
         EnemyCore blocker = FindFirstLaneBlocker(enemy, enemy.TargetTransform.position);
-        if (blocker == null)
+        if (blocker == null && !TryFindWorldObstacle(enemy, toTarget, distance, out _))
             return true;
 
-        if (TryClaimLaneRequest(enemy))
+        if (TryClaimLaneRequest(enemy, maximumAttackDistance) && blocker != null)
             AskEnemyToYield(blocker, enemy, enemy.TargetTransform.position);
 
         return false;
     }
 
+    /// <summary>Read-only readiness used to rank candidates; never reserves a lane or changes movement.</summary>
+    public bool IsAttackPositionReady(EnemyCore enemy, float attackMaximumReach = 0f)
+    {
+        if (!IsAvailable(enemy) || enemy.TargetTransform == null || !enemy.IsEngagedForCoordination)
+            return false;
+        if (_committedAttacker != null && _committedAttacker != enemy)
+            return false;
+
+        Vector3 toTarget = Flatten(enemy.TargetTransform.position - enemy.transform.position);
+        float distance = toTarget.magnitude;
+        return distance >= _minimumAttackDistance && distance <= GetAttackReach(attackMaximumReach) &&
+               FindFirstLaneBlocker(enemy, enemy.TargetTransform.position) == null &&
+               !TryFindWorldObstacle(enemy, toTarget, distance, out _);
+    }
+
+    public bool TryGetAssignedPosition(EnemyCore enemy, out Vector3 position)
+    {
+        position = default;
+        if (!IsAvailable(enemy) || enemy.TargetTransform == null ||
+            !_agentStates.TryGetValue(enemy, out AgentState state))
+            return false;
+        EnsureSlot(enemy, state);
+        position = GetSlotPosition(enemy, state);
+        return true;
+    }
+
+    private float GetAttackReach(float requestedReach)
+    {
+        return requestedReach > 0f ? Mathf.Min(_maximumAttackDistance, requestedReach) : _maximumAttackDistance;
+    }
+
     public void NotifyAttackStarted(EnemyCore enemy)
     {
-        if (!TryGetActiveState(enemy, out _))
+        if (!TryGetActiveState(enemy, out _) ||
+            (_committedAttacker != null && _committedAttacker != enemy))
             return;
 
         _committedAttacker = enemy;
@@ -233,6 +302,8 @@ public class EnemyPositioningController : MonoBehaviour
     {
         if (_committedAttacker == enemy)
             _committedAttacker = null;
+        if (_laneRequester == enemy)
+            _laneRequester = null;
     }
 
     public Vector3 AdjustMovement(EnemyCore enemy, Vector3 desiredVelocity)
@@ -293,6 +364,7 @@ public class EnemyPositioningController : MonoBehaviour
         steeredVelocity = Vector3.ClampMagnitude(steeredVelocity, speed);
 
         Vector3 result = Vector3.Lerp(flatVelocity, steeredVelocity, _motionSteeringStrength);
+        result = AvoidWorldObstacles(enemy, result, speed);
         result.y = desiredVelocity.y;
         return result;
     }
@@ -303,19 +375,29 @@ public class EnemyPositioningController : MonoBehaviour
         Vector3 targetPosition = enemy.TargetTransform.position;
         Vector3 toTarget = Flatten(targetPosition - enemyPosition);
         float distance = toTarget.magnitude;
-        if (distance <= 0.001f)
-            return Vector3.zero;
-
-        Vector3 forward = toTarget / distance;
+        Vector3 forward = distance > 0.001f ? toTarget / distance : -GetSlotDirection(state.SlotIndex);
         Vector3 right = Vector3.Cross(Vector3.up, forward);
-        float radialError = distance - state.ComfortRadius;
+        float desiredRadius = GetSlotRadius(state);
+        if (_laneRequester == enemy)
+            desiredRadius = Mathf.Clamp(_laneRequestReach * 0.82f,
+                _minimumAttackDistance + 0.15f, Mathf.Max(_minimumAttackDistance + 0.15f, _laneRequestReach - 0.1f));
+        float radialError = distance - desiredRadius;
         Vector3 steering = Vector3.zero;
 
-        if (Mathf.Abs(radialError) > _radialDeadZone)
+        float radialTolerance = _laneRequester == enemy ? 0.15f : Mathf.Min(_radialDeadZone, _slotArrivalDistance);
+        if (Mathf.Abs(radialError) > radialTolerance)
             steering += forward * Mathf.Sign(radialError) * Mathf.Min(Mathf.Abs(radialError), 2f);
 
-        float orbitPulse = 0.65f + 0.35f * Mathf.Sin(_combatClock * 1.7f + StableId(enemy) * 0.013f);
-        steering += right * state.OrbitSign * _orbitInfluence * orbitPulse;
+        // A stable sector replaces perpetual orbiting. Approach tangentially instead
+        // of taking a straight chord through the player or another sector.
+        if (_laneRequester != enemy)
+        {
+            Vector3 slotDirection = GetSlotDirection(state.SlotIndex);
+            float angle = Vector3.SignedAngle(-forward, slotDirection, Vector3.up) * Mathf.Deg2Rad;
+            float arcDistance = angle * Mathf.Max(distance, desiredRadius);
+            if (Mathf.Abs(arcDistance) > _slotArrivalDistance)
+                steering -= right * Mathf.Clamp(arcDistance, -2f, 2f) * Mathf.Max(0.35f, _orbitInfluence);
+        }
 
         foreach (EnemyCore other in _agentStates.Keys)
         {
@@ -324,15 +406,18 @@ public class EnemyPositioningController : MonoBehaviour
 
             Vector3 away = Flatten(enemyPosition - other.transform.position);
             float neighbourDistance = away.magnitude;
-            if (neighbourDistance <= 0.001f || neighbourDistance >= _personalSpaceRadius)
+            if (neighbourDistance >= _personalSpaceRadius)
                 continue;
 
             float closeness = 1f - neighbourDistance / _personalSpaceRadius;
-            steering += away / neighbourDistance * closeness * _separationInfluence;
+            Vector3 separation = neighbourDistance > 0.001f
+                ? away / neighbourDistance
+                : CoincidentSeparation(enemy, other);
+            steering += separation * closeness * _separationInfluence;
         }
 
         EnemyCore priorityEnemy = _committedAttacker != null ? _committedAttacker : _laneRequester;
-        if (priorityEnemy != null && priorityEnemy != enemy &&
+        if (priorityEnemy != null && priorityEnemy != enemy && priorityEnemy.TargetTransform == enemy.TargetTransform &&
             IsBlockingLane(enemy, priorityEnemy, targetPosition))
         {
             AskEnemyToYield(enemy, priorityEnemy, targetPosition);
@@ -340,7 +425,7 @@ public class EnemyPositioningController : MonoBehaviour
 
         if (_laneRequester == enemy)
         {
-            if (distance > _maximumAttackDistance - 0.15f)
+            if (distance > _laneRequestReach - 0.15f)
                 steering += forward * 2.35f;
             else if (distance < _minimumAttackDistance + 0.1f)
                 steering -= forward * 1.8f;
@@ -366,13 +451,20 @@ public class EnemyPositioningController : MonoBehaviour
         return steering;
     }
 
-    private bool TryClaimLaneRequest(EnemyCore enemy)
+    private bool TryClaimLaneRequest(EnemyCore enemy, float reach)
     {
         if (_laneRequester != null && _laneRequester != enemy && _combatClock < _laneRequestUntil)
             return false;
 
+        // Repeated failed checks must not perpetually extend a preparation lease.
+        if (_laneRequester == enemy && _combatClock < _laneRequestUntil)
+            return true;
+
         _laneRequester = enemy;
         _laneRequestUntil = _combatClock + _laneRequestMemory;
+        _laneRequestReach = reach;
+        if (_agentStates.TryGetValue(enemy, out AgentState state))
+            state.NextActionTime = 0f;
         return true;
     }
 
@@ -470,7 +562,7 @@ public class EnemyPositioningController : MonoBehaviour
 
     private void AskEnemyToYield(EnemyCore blocker, EnemyCore attacker, Vector3 targetPosition)
     {
-        if (!_agentStates.TryGetValue(blocker, out AgentState state))
+        if (!_agentStates.TryGetValue(blocker, out AgentState state) || !blocker.IsEngagedForCoordination)
             return;
 
         Vector3 laneDirection = Flatten(targetPosition - attacker.transform.position).normalized;
@@ -480,7 +572,9 @@ public class EnemyPositioningController : MonoBehaviour
         if (Mathf.Abs(side) <= 0.08f)
             side = state.OrbitSign;
 
-        state.YieldDirection = right * Mathf.Sign(side);
+        // Keep the chosen side for the lifetime of one yield to avoid left/right jitter.
+        if (_combatClock >= state.YieldUntil)
+            state.YieldDirection = right * Mathf.Sign(side);
         state.YieldUntil = Mathf.Max(state.YieldUntil, _combatClock + _yieldDuration);
         state.NextActionTime = 0f;
     }
@@ -497,11 +591,10 @@ public class EnemyPositioningController : MonoBehaviour
         if (_combatClock < state.NextPreferenceTime)
             return;
 
-        float normalizedIdNoise = Mathf.Repeat(StableId(enemy) * 0.6180339f + _combatClock * 0.071f, 1f);
-        state.TargetComfortRadius = Mathf.Lerp(_minimumCombatRadius, _maximumCombatRadius, normalizedIdNoise);
-
-        if (Random.value < 0.3f)
-            state.OrbitSign *= -1f;
+        float normalizedIdNoise = Mathf.Repeat(IdFraction(enemy) + _combatClock * 0.071f, 1f);
+        float baseRadius = Mathf.Lerp(_minimumCombatRadius, _maximumCombatRadius, 0.7f);
+        state.TargetComfortRadius = Mathf.Clamp(baseRadius + (normalizedIdNoise - 0.5f) * 0.3f,
+            _minimumCombatRadius, _maximumCombatRadius);
 
         state.NextPreferenceTime = _combatClock + RandomInRange(_preferenceChangeInterval);
     }
@@ -509,8 +602,8 @@ public class EnemyPositioningController : MonoBehaviour
     private AgentState CreateAgentState(EnemyCore enemy)
     {
         int stableId = StableId(enemy);
-        float seed = Mathf.Repeat(stableId * 0.6180339f, 1f);
-        float comfortRadius = Mathf.Lerp(_minimumCombatRadius, _maximumCombatRadius, seed);
+        float comfortRadius = Mathf.Clamp(Mathf.Lerp(_minimumCombatRadius, _maximumCombatRadius, 0.7f) +
+            (IdFraction(enemy) - 0.5f) * 0.3f, _minimumCombatRadius, _maximumCombatRadius);
         return new AgentState
         {
             ComfortRadius = comfortRadius,
@@ -521,6 +614,183 @@ public class EnemyPositioningController : MonoBehaviour
             NextActionTime = 0f,
             Action = EnemyPositioningAction.Hold
         };
+    }
+
+    private void EnsureSlot(EnemyCore enemy, AgentState state)
+    {
+        Transform target = enemy.TargetTransform;
+        bool hasStableSlot = state.SlotIndex >= 0 && state.SlotTarget == target &&
+            Flatten(target.position - state.SlotAnchorPosition).sqrMagnitude <
+            _targetRelocationDistance * _targetRelocationDistance;
+        if (hasStableSlot)
+        {
+            if (_combatClock < state.NextSlotProbeTime)
+                return;
+            state.NextSlotProbeTime = _combatClock + 0.75f;
+            Vector3 toSlot = Flatten(GetSlotPosition(enemy, state) - enemy.transform.position);
+            if (!TryFindWorldObstacle(enemy, toSlot, toSlot.magnitude, out _))
+            {
+                state.BlockedSlotProbeCount = 0;
+                return;
+            }
+            // Transient obstruction or a single target step must not reshuffle a
+            // formation. Two spaced failures allow recovery after smaller moves.
+            if (++state.BlockedSlotProbeCount < 2)
+                return;
+        }
+
+        int previousSlot = state.SlotIndex;
+        state.SlotTarget = target;
+        state.SlotAnchorPosition = target.position;
+        Vector3 radial = Flatten(enemy.transform.position - target.position).normalized;
+        if (radial.sqrMagnitude < 0.001f)
+            radial = Quaternion.Euler(0f, IdFraction(enemy) * 360f, 0f) * Vector3.forward;
+
+        float bestScore = float.PositiveInfinity;
+        int bestSlot = previousSlot;
+        bool foundClearSlot = false;
+        // Enough sectors for every participant, with a free overflow ring.
+        int candidateCount = ((_agentStates.Count / _sectorsPerRing) + 1) * _sectorsPerRing;
+        for (int slot = 0; slot < candidateCount; slot++)
+        {
+            bool occupied = false;
+            foreach (KeyValuePair<EnemyCore, AgentState> other in _agentStates)
+            {
+                if (other.Key != enemy && IsAvailable(other.Key) && other.Value.SlotTarget == target &&
+                    other.Value.SlotIndex == slot)
+                {
+                    occupied = true;
+                    break;
+                }
+            }
+            if (occupied)
+                continue;
+
+            // Prefer an inner ring, then the nearest free angle; no periodic reshuffle.
+            float score = (slot / _sectorsPerRing) * 4f + 1f - Vector3.Dot(radial, GetSlotDirection(slot));
+            Vector3 candidate = target.position + GetSlotDirection(slot) *
+                GetSlotRadius(state, slot);
+            Vector3 toCandidate = Flatten(candidate - enemy.transform.position);
+            bool blocked = TryFindWorldObstacle(enemy, toCandidate, toCandidate.magnitude, out _);
+            if (blocked && (hasStableSlot || foundClearSlot))
+                continue;
+            if (!blocked && !foundClearSlot)
+                bestScore = float.PositiveInfinity;
+            if (score >= bestScore)
+                continue;
+            foundClearSlot |= !blocked;
+            bestScore = score;
+            bestSlot = slot;
+        }
+        // If every alternative is obstructed, retain the previous reservation and
+        // let local sliding continue instead of bouncing between unreachable slots.
+        state.SlotIndex = bestSlot;
+        state.BlockedSlotProbeCount = 0;
+        state.NextSlotProbeTime = _combatClock + 1.5f + IdFraction(enemy) * 0.25f;
+        state.NextActionTime = 0f;
+    }
+
+    private Vector3 GetSlotDirection(int slot)
+    {
+        slot = Mathf.Max(0, slot);
+        float offset = ((slot / _sectorsPerRing) & 1) * 0.5f;
+        float degrees = (slot % _sectorsPerRing + offset) * (360f / _sectorsPerRing);
+        return Quaternion.Euler(0f, degrees, 0f) * Vector3.forward;
+    }
+
+    private float GetSlotRadius(AgentState state)
+    {
+        return GetSlotRadius(state, state.SlotIndex);
+    }
+
+    private float GetSlotRadius(AgentState state, int slot)
+    {
+        // Adjacent reservations must retain enough chord distance for personal space.
+        float minimumSpacingRadius = _personalSpaceRadius /
+            (2f * Mathf.Sin(Mathf.PI / _sectorsPerRing));
+        return Mathf.Max(state.ComfortRadius, minimumSpacingRadius) +
+               (Mathf.Max(0, slot) / _sectorsPerRing) * Mathf.Max(_holdingRingSpacing, _personalSpaceRadius);
+    }
+
+    private Vector3 GetSlotPosition(EnemyCore enemy, AgentState state)
+    {
+        return enemy.TargetTransform.position + GetSlotDirection(state.SlotIndex) * GetSlotRadius(state);
+    }
+
+    private Vector3 AvoidWorldObstacles(EnemyCore enemy, Vector3 velocity, float speed)
+    {
+        float probeDistance = Mathf.Max(_obstacleProbeRadius, _motionLookAhead);
+        if (!TryFindWorldObstacle(enemy, velocity, probeDistance, out RaycastHit hit))
+            return velocity;
+
+        Vector3 normal = Flatten(hit.normal).normalized;
+        if (normal.sqrMagnitude < 0.01f)
+            return Vector3.zero;
+        Vector3 slide = Vector3.ProjectOnPlane(velocity, normal);
+        if (slide.sqrMagnitude < speed * speed * 0.1f)
+        {
+            Vector3 tangent = Vector3.Cross(Vector3.up, normal);
+            AgentState state = _agentStates[enemy];
+            float sign = state.OrbitSign;
+            if (enemy.TargetTransform != null)
+            {
+                EnsureSlot(enemy, state);
+                float toSlot = Vector3.Dot(GetSlotPosition(enemy, state) - enemy.transform.position, tangent);
+                if (Mathf.Abs(toSlot) > 0.1f)
+                    sign = Mathf.Sign(toSlot);
+            }
+            slide = tangent * sign * speed * 0.65f;
+        }
+        if (TryFindWorldObstacle(enemy, slide, probeDistance * 0.65f, out _))
+            return Vector3.zero;
+        return Vector3.ClampMagnitude(slide, speed);
+    }
+
+    private bool TryFindWorldObstacle(EnemyCore enemy, Vector3 direction, float distance, out RaycastHit nearest)
+    {
+        nearest = default;
+        if (distance <= 0.001f || direction.sqrMagnitude < 0.001f || _obstacleLayers.value == 0)
+            return false;
+
+        int count = Physics.SphereCastNonAlloc(enemy.transform.position + Vector3.up * _obstacleProbeHeight,
+            _obstacleProbeRadius, direction.normalized, _obstacleHits, distance,
+            _obstacleLayers, QueryTriggerInteraction.Ignore);
+        float nearestDistance = float.PositiveInfinity;
+        bool found = false;
+        for (int i = 0; i < count; i++)
+        {
+            RaycastHit hit = _obstacleHits[i];
+            Collider collider = hit.collider;
+            if (collider == null || hit.normal.y > 0.65f ||
+                collider.GetComponentInParent<EnemyCore>() != null ||
+                collider.GetComponentInParent<PlayerCore>() != null)
+                continue;
+            Transform target = enemy.TargetTransform;
+            if (target != null && (collider.transform.IsChildOf(target) ||
+                target.IsChildOf(collider.transform)))
+                continue;
+            if (hit.distance >= nearestDistance)
+                continue;
+            nearestDistance = hit.distance;
+            nearest = hit;
+            found = true;
+        }
+        // Saturated buffers can hide a wall behind ignored character colliders.
+        return found || count == _obstacleHits.Length;
+    }
+
+    private static Vector3 CoincidentSeparation(EnemyCore enemy, EnemyCore other)
+    {
+        int a = StableId(enemy);
+        int b = StableId(other);
+        int seed = (Mathf.Min(a, b) ^ Mathf.Max(a, b)) & 1023;
+        Vector3 axis = Quaternion.Euler(0f, seed * (360f / 1024f), 0f) * Vector3.forward;
+        return a < b ? axis : -axis;
+    }
+
+    private static float IdFraction(EnemyCore enemy)
+    {
+        return Mathf.Abs(StableId(enemy) % 997) / 997f;
     }
 
     private bool TryGetActiveState(EnemyCore enemy, out AgentState state)
@@ -554,6 +824,15 @@ public class EnemyPositioningController : MonoBehaviour
                 continue;
             }
 
+            // Re-enabling an old controller must not reclaim an enemy that was
+            // deliberately moved to another live controller while this was off.
+            EnemyPositioningController owner = enemy.PositioningController;
+            if (owner != null && owner != this && owner.isActiveAndEnabled)
+            {
+                _enemies.RemoveAt(i);
+                continue;
+            }
+
             Register(enemy);
         }
     }
@@ -578,11 +857,8 @@ public class EnemyPositioningController : MonoBehaviour
         }
 
         foreach (EnemyCore enemy in _cleanupBuffer)
-        {
-            _agentStates.Remove(enemy);
-            if (enemy != null)
-                Unregister(enemy);
-        }
+            Unregister(enemy);
+        _enemies.RemoveAll(enemy => enemy == null);
     }
 
     private static bool IsAvailable(EnemyCore enemy)
@@ -621,6 +897,14 @@ public class EnemyPositioningController : MonoBehaviour
         _minimumAttackDistance = Mathf.Max(0f, _minimumAttackDistance);
         _maximumAttackDistance = Mathf.Max(_minimumAttackDistance, _maximumAttackDistance);
         _attackLaneHalfWidth = Mathf.Max(0.1f, _attackLaneHalfWidth);
+        _sectorsPerRing = Mathf.Clamp(_sectorsPerRing, 4, 16);
+        _holdingRingSpacing = Mathf.Max(0.5f, _holdingRingSpacing);
+        _slotArrivalDistance = Mathf.Max(0.1f, _slotArrivalDistance);
+        _targetRelocationDistance = Mathf.Max(1f, _targetRelocationDistance);
+        _obstacleProbeRadius = Mathf.Max(0.05f, _obstacleProbeRadius);
+        _obstacleProbeHeight = Mathf.Max(_obstacleProbeRadius + 0.05f, _obstacleProbeHeight);
+        _yieldDuration = Mathf.Max(0f, _yieldDuration);
+        _laneRequestMemory = Mathf.Max(0.1f, _laneRequestMemory);
         ClampRange(ref _preferenceChangeInterval);
         ClampRange(ref _actionHoldInterval);
     }
@@ -644,6 +928,15 @@ public class EnemyPositioningController : MonoBehaviour
             Gizmos.color = enemy == _committedAttacker ? Color.red : Color.cyan;
             Gizmos.DrawLine(enemy.transform.position + Vector3.up * 0.1f,
                 enemy.TargetTransform.position + Vector3.up * 0.1f);
+
+            if (_agentStates.TryGetValue(enemy, out AgentState assigned) && assigned.SlotIndex >= 0)
+            {
+                Vector3 destination = GetSlotPosition(enemy, assigned);
+                Gizmos.color = new Color(0.3f, 1f, 0.4f, 0.8f);
+                Gizmos.DrawWireSphere(destination + Vector3.up * 0.1f, _slotArrivalDistance);
+                Gizmos.DrawLine(enemy.transform.position + Vector3.up * 0.1f,
+                    destination + Vector3.up * 0.1f);
+            }
 
             if (_agentStates.TryGetValue(enemy, out AgentState state) && _combatClock < state.YieldUntil)
             {

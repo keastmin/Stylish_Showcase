@@ -11,6 +11,7 @@ public class EnemyStateMachine
     public EnemyDeadState DeadState;
 
     private EnemyStateBase _currentState;
+    public EnemyStateBase CurrentState => _currentState;
 
     private EnemyCore _core;
 
@@ -34,6 +35,13 @@ public class EnemyStateMachine
 
     public void UpdateTick()
     {
+        // Handle death before dispatch: a base-state transition must not let the
+        // previous derived state continue and enter a fresh attack on this frame.
+        if (_core.IsDead && _currentState != DeadState)
+        {
+            Transition(DeadState);
+            return;
+        }
         _currentState?.UpdateTick();
     }
 
@@ -59,10 +67,26 @@ public class EnemyStateMachine
 
     public void Transition(EnemyStateBase nextState)
     {
-        _currentState?.Exit();
+        if (nextState == null)
+            return;
+
+        // Repeated hits must re-enter to reset reaction flags and restart the animation.
+        bool isHitReaction = nextState is EnemyFrontHitState || nextState is EnemyBackHitState;
+        if (ReferenceEquals(_currentState, nextState) && !isHitReaction)
+            return;
+
         // A pause preserves pending motion; cancelling a state does not.
         _currentState?.ClearAccumulatedMotion();
+        bool leavingAttack = _currentState is EnemyAttackNoticeState || _currentState is EnemyAttackState;
+        bool enteringAttack = nextState is EnemyAttackNoticeState || nextState is EnemyAttackState;
+        _currentState?.Exit();
+        if (leavingAttack && !enteringAttack)
+        {
+            _core.EndAttackTargeting();
+            _core.ReleaseAttackPermission();
+        }
         _currentState = nextState;
+        _currentState.ClearAccumulatedMotion();
         _currentState?.Enter();
     }
 }

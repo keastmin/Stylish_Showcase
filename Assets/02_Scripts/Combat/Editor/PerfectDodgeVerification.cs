@@ -90,6 +90,19 @@ public static class PerfectDodgeVerification
 
     private static void ValidateRuntime()
     {
+        // This suite verifies the retained legacy implementation. The Studio has
+        // its own runtime suite and is explicitly disconnected for this fixture.
+        var player = UnityEngine.Object.FindAnyObjectByType<PlayerCore>();
+        var binding = typeof(PlayerCore).GetField("_dodgeDefinition", BindingFlags.Instance | BindingFlags.NonPublic);
+        var original = binding.GetValue(player);
+        player.Dodge?.Dispose();
+        binding.SetValue(player, null);
+        try { ValidateLegacyRuntime(); }
+        finally { binding.SetValue(player, original); }
+    }
+
+    private static void ValidateLegacyRuntime()
+    {
         var player = UnityEngine.Object.FindAnyObjectByType<PlayerCore>();
         var enemy = UnityEngine.Object.FindAnyObjectByType<EnemyCore>();
         Check(player != null && player.StateMachine != null && enemy != null, "Scene actors initialize");
@@ -107,7 +120,7 @@ public static class PerfectDodgeVerification
 
         ValidateDelayedStart(player, enemy, settings);
 
-        player.StateMachine.Transition(player.StateMachine.FrontDodgeState);
+        EnterRechargedDodge(player, player.StateMachine.FrontDodgeState);
         Check(player.IsPerfectDodgeWindowOpen && player.PerfectDodgeSource == enemy, "Dodge opens target window");
         Near(player.Animator.speed, playerBaseSpeed * settings.SlowScale, "Player slows");
         Near(enemy.Animator.speed, enemyBaseSpeed * settings.SlowScale, "All enemies slow");
@@ -123,7 +136,7 @@ public static class PerfectDodgeVerification
         Near(CombatTimeController.Scale, 1f, "Natural end releases slow motion");
         Check(!player.TryBeginDodgeAttack(), "Closed window rejects counterattack");
 
-        player.StateMachine.Transition(player.StateMachine.BackDodgeState);
+        EnterRechargedDodge(player, player.StateMachine.BackDodgeState);
         // A headless Editor has no focused Game view or necessarily any paired hardware.
         InputSystem.settings = UnityEngine.Object.Instantiate(InputSystem.settings);
         InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
@@ -160,7 +173,7 @@ public static class PerfectDodgeVerification
         Check(CurrentState(player) == player.StateMachine.IdleState && player.DodgeAttackTarget == null,
             "Counter completes without NotImplementedException and clears target");
 
-        player.StateMachine.Transition(player.StateMachine.FrontDodgeState);
+        EnterRechargedDodge(player, player.StateMachine.FrontDodgeState);
         player.BeginHitStop();
         enemy.BeginHitStop();
         player.EndPerfectDodge(true);
@@ -171,11 +184,11 @@ public static class PerfectDodgeVerification
         Near(player.Animator.speed, playerBaseSpeed, "Hitstop restores current scale, not stale slow scale");
         Near(enemy.Animator.speed, enemyBaseSpeed, "Enemy hitstop restores current scale");
 
-        player.StateMachine.Transition(player.StateMachine.BackDodgeState);
+        EnterRechargedDodge(player, player.StateMachine.BackDodgeState);
         player.StateMachine.Transition(player.StateMachine.IdleState);
         Near(CombatTimeController.Scale, 1f, "Interrupted dodge cleans up its request");
 
-        player.StateMachine.Transition(player.StateMachine.FrontDodgeState);
+        EnterRechargedDodge(player, player.StateMachine.FrontDodgeState);
         enemy.gameObject.SetActive(false);
         Check(!player.TryBeginDodgeAttack(), "Missing target rejects counter safely");
         Near(CombatTimeController.Scale, 1f, "Missing target releases slow motion");
@@ -233,11 +246,11 @@ public static class PerfectDodgeVerification
         player.OnDamaged += onDamaged;
 
         player.OnPerfectDodgeCheck = () => null;
-        player.StateMachine.Transition(player.StateMachine.FrontDodgeState);
+        EnterRechargedDodge(player, player.StateMachine.FrontDodgeState);
         Check(!player.IsInvulnerable && player.TryTakeDamage(damage), "Normal dodge still takes damage");
         Check(damageEvents == 1, "Accepted damage emits its damage event");
         player.OnPerfectDodgeCheck = () => enemy;
-        player.StateMachine.Transition(player.StateMachine.FrontDodgeState);
+        EnterRechargedDodge(player, player.StateMachine.FrontDodgeState);
         AssertProtected("Perfect dodge", player, damage);
         Check(player.IsPerfectDodgeWindowOpen && player.PerfectDodgeSource == enemy,
             "Rejected damage preserves the perfect dodge window and target");
@@ -268,14 +281,14 @@ public static class PerfectDodgeVerification
         Check(damageEvents == 1, "Protected hits never emit damage events");
         Check(!player.IsInvulnerable && player.TryTakeDamage(damage), "Counter completion restores damage reception");
 
-        player.StateMachine.Transition(player.StateMachine.BackDodgeState);
+        EnterRechargedDodge(player, player.StateMachine.BackDodgeState);
         settings.FadeOutDuration = 0.5f;
         player.AnimationEvent.OnPerfectDodgeEndInvoke();
         Check(CombatTimeController.Scale < 1f && !player.IsInvulnerable && player.TryTakeDamage(damage),
             "Natural end restores damage reception even while fading out");
         settings.FadeOutDuration = 0f;
 
-        player.StateMachine.Transition(player.StateMachine.FrontDodgeState);
+        EnterRechargedDodge(player, player.StateMachine.FrontDodgeState);
         player.TryBeginDodgeAttack();
         player.StateMachine.Transition(player.StateMachine.IdleState);
         Check(!player.IsInvulnerable && player.TryTakeDamage(damage), "Interrupted counter does not leave invulnerability behind");
@@ -330,6 +343,13 @@ public static class PerfectDodgeVerification
         director.Stop();
     }
 
+    // These cases isolate perfect-dodge behavior; charge timing has its own verification.
+    private static void EnterRechargedDodge(PlayerCore player, PlayerStateBase state)
+    {
+        typeof(PlayerCore).GetMethod("TickDodgeCooldown", BindingFlags.Instance | BindingFlags.NonPublic)
+            .Invoke(player, new object[] { player.DodgeCooldownDuration });
+        Check(player.StateMachine.Transition(state), "Recharged dodge enters for perfect-dodge scenario");
+    }
     private static PlayerStateBase CurrentState(PlayerCore player) => Field<PlayerStateBase>(player.StateMachine, "_currentState");
     private static void TickPerfectDodge(PlayerCore player, float realDeltaTime) =>
         typeof(PlayerCore).GetMethod("TickPerfectDodge", BindingFlags.Instance | BindingFlags.NonPublic)

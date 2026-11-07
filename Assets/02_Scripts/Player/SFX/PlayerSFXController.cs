@@ -11,27 +11,28 @@ public class PlayerSFXController : MonoBehaviour
     [SerializeField] private AudioClip[] _hitFeedbackSFX;
     [SerializeField] private AudioClip _perfectDodgeSFX;
     [SerializeField] private AudioClip[] _skillSlashSFX;
+    [SerializeField] private AudioClip _skillImpactFrameSFX;
 
     public void PlayOneShotBasicSlashSFXRandom()
     {
         int randIndex = Random.Range(0, _basicAttackSlashSFX.Length);
-        _as.PlayOneShot(_basicAttackSlashSFX[randIndex], 1.5f);
+        _as.PlayOneShot(_basicAttackSlashSFX[randIndex]);
     }
 
     public void PlayOneShotRunAttackSFX()
     {
-        _as.PlayOneShot(_runAttackSlashSFX, 1.5f);
+        _as.PlayOneShot(_runAttackSlashSFX);
     }
 
     public void PlayOneShotDodgeAttackSlashSFX()
     {
-        _as.PlayOneShot(_dodgeAttackSlashSFX, 1.5f);
+        _as.PlayOneShot(_dodgeAttackSlashSFX);
     }
 
     public void PlayOneShotDodgeJetSFX()
     {
         int randIndex = Random.Range(0, _dodgeJetSFX.Length);
-        _as.PlayOneShot(_dodgeJetSFX[randIndex], 2.3f);
+        _as.PlayOneShot(_dodgeJetSFX[randIndex]);
     }
 
     public void PlayOneShotHitFeedbackSFX()
@@ -47,7 +48,7 @@ public class PlayerSFXController : MonoBehaviour
 
     public void PlayOneShotPerfectDodgeSFX()
     {
-        _as.PlayOneShot(_perfectDodgeSFX, 3f);
+        _as.PlayOneShot(_perfectDodgeSFX);
     }
 
     public void PlayOneShotSkillSlashSFX()
@@ -59,5 +60,10 @@ public class PlayerSFXController : MonoBehaviour
         AudioClip clip = _skillSlashSFX[randIndex];
         if (clip != null)
             _as.PlayOneShot(clip);
+    }
+
+    public void PlayOneShotSkillImpactFrameSFX()
+    {
+        _as.PlayOneShot(_skillImpactFrameSFX);
     }
 }

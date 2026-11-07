@@ -25,12 +25,17 @@ public class PlayerStateMachine
     public PlayerDodgeAttackLoopState DodgeAttackLoopState;
     public PlayerDodgeAttackEndState DodgeAttackEndState;
     public PlayerSkillState SkillState;
+    public PlayerUltimateState UltimateState;
 
     private PlayerStateBase _currentState;
     private readonly PlayerCore _core;
     private Animator _playerAnimator;
 
     public bool IsInvulnerable => _currentState?.IsInvulnerable == true;
+    public bool IsSkillActive => _currentState is PlayerSkillState;
+    // Q is a priority action in every initialized gameplay state; an active cast
+    // cannot restart itself. Cooldown and pause are checked by PlayerCore.
+    public bool CanStartUltimate => _currentState != null && _currentState is not PlayerUltimateState;
 
     public PlayerStateMachine(PlayerCore player)
     {
@@ -59,16 +64,19 @@ public class PlayerStateMachine
         DodgeAttackLoopState = new PlayerDodgeAttackLoopState(player);
         DodgeAttackEndState = new PlayerDodgeAttackEndState(player);
         SkillState = new PlayerSkillState(player);
+        UltimateState = new PlayerUltimateState(player);
     }
 
     public void InitStateMachine(PlayerStateBase initState)
     {
+        if (IsNewDodge(initState) && !_core.TryConsumeDodgeCharge()) return;
         _currentState = initState;
         _currentState?.Enter();
     }
 
     public void UpdateTick()
     {
+        if (_core.InputCollector.IsInputUltimate && _core.TryBeginUltimate()) return;
         _currentState?.UpdateTick();
     }
 
@@ -92,14 +100,26 @@ public class PlayerStateMachine
         _currentState?.OnHitStopStarted();
     }
 
-    public void Transition(PlayerStateBase nextState)
+    public bool Transition(PlayerStateBase nextState)
     {
+        if (nextState is PlayerUltimateState && !_core.CanBeginUltimate) return false;
+        // Stop is a continuation and counterattacks are separate actions.
+        // Reject before Exit so a depleted press cannot cancel attacks, reset
+        // animation/event state, clear targets, or restart the cooldown.
+        if (IsNewDodge(nextState) && !_core.TryConsumeDodgeCharge()) return false;
+        _core.Dodge?.BeforeTransition(_currentState, nextState);
         _currentState?.Exit();
+        if (nextState is PlayerUltimateState)
+            PlayerUltimateExitBlend.Cancel(_core.Animator);
         if (_currentState is PlayerBasicAttackState && nextState is not PlayerBasicAttackState)
             _core.TargetDetector.ClearBasicAttackTarget();
         if (_currentState is PlayerDodgeAttackState && nextState is not PlayerDodgeAttackState)
             _core.ClearDodgeAttackTarget();
         _currentState = nextState;
         _currentState?.Enter();
+        return true;
     }
+
+    private static bool IsNewDodge(PlayerStateBase state)
+        => state is PlayerFrontDodgeState || state is PlayerBackDodgeState;
 }

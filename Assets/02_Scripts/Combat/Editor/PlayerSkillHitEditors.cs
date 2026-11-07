@@ -13,7 +13,7 @@ public sealed class PlayerSkillAttackReceiverEditor : Editor
         EditorGUILayout.PropertyField(serializedObject.FindProperty("_hitboxRoot"));
         EditorGUILayout.PropertyField(serializedObject.FindProperty("_skillHitImpulse"));
         EditorGUILayout.PropertyField(serializedObject.FindProperty("_skillHitShakeForce"));
-        EditorGUILayout.HelpBox("Skill Hits의 마커가 시간순으로 Hit1~12를 사용합니다. 13번째 이후는 Hit12를 반복 타격합니다. 각 타격의 공격 단계는 Stagger Level로 설정합니다.", MessageType.Info);
+        EditorGUILayout.HelpBox("Skill Hits 마커의 필드 번호가 Hit1~12의 피해와 범위를 선택합니다. Studio 연결 후에는 시간·행 순서를 바꿔도 필드 연결을 유지합니다. 같은 필드를 고른 마커는 아래 설정을 공유합니다.", MessageType.Info);
         SerializedProperty fields = serializedObject.FindProperty("_damageFields");
         fields.arraySize = PlayerSkillAttackReceiver.DamageFieldCount;
         for (int i = 0; i < fields.arraySize; i++)
@@ -45,13 +45,18 @@ public sealed class PlayerSkillHitMarkerEditor : Editor
 {
     public override void OnInspectorGUI()
     {
+        var marker = (PlayerSkillHitMarker)target;
+        EditorGUI.BeginChangeCheck();
+        double time = EditorGUILayout.DoubleField("발생 시각 (초)", marker.time);
+        if (EditorGUI.EndChangeCheck()) PlayerSkillTimelineUtility.SetMarkerTime(marker, time);
         serializedObject.Update();
-        DrawPropertiesExcluding(serializedObject, "m_Script");
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_enabled"), new GUIContent("타격 사용"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_damageFieldNumber"), new GUIContent("데미지 필드 (0 = 자동)"));
         serializedObject.ApplyModifiedProperties();
 
-        var marker = (PlayerSkillHitMarker)target;
         int number = marker.DamageFieldNumber;
         EditorGUILayout.LabelField("사용할 데미지 필드", $"Hit{number}", EditorStyles.boldLabel);
+        if (!marker.Enabled) EditorGUILayout.HelpBox("이 마커의 타격은 실행하지 않습니다. 연결된 필드와 다른 마커는 유지합니다.", MessageType.Info);
         var director = TimelineEditor.inspectedDirector;
         var receiver = director != null && marker.parent != null
             ? director.GetGenericBinding(marker.parent) as PlayerSkillAttackReceiver : null;

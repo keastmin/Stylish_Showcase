@@ -10,23 +10,23 @@ public class EnemySFX : MonoBehaviour
 
     public void OnAttackNoticeSFX()
     {
-        _as.PlayOneShot(_attackNoticeClip, 3f);
+        _as.PlayOneShot(_attackNoticeClip);
     }
 
     public void OnCloseAttackSlashSFX()
     {
         int randIndex = Random.Range(0, _closeAttackSlashClip.Length);
-        _as.PlayOneShot(_closeAttackSlashClip[randIndex], 1.5f);
+        _as.PlayOneShot(_closeAttackSlashClip[randIndex]);
     }
 
     public void OnCloseAttackHitSFX()
     {
-        _as.PlayOneShot(_closeAttackHitClip, 2f);
+        _as.PlayOneShot(_closeAttackHitClip);
     }
 
     public void OnDeadSFX()
     {
         int randIndex = Random.Range(0, _deadClip.Length);
-        _as.PlayOneShot(_deadClip[randIndex], 1.5f);
+        _as.PlayOneShot(_deadClip[randIndex]);
     }
 }

@@ -14,6 +14,7 @@ public class EnemyMover : MonoBehaviour
     [SerializeField][Min(0f)] private float _groundHoverSharpness = 20f;
 
     private Rigidbody _rigidbody;
+    public Vector3 PhysicsPosition => _rigidbody.position;
 
     private Vector3 _inputVelocity = Vector3.zero;
     private bool _isHitStopped;
