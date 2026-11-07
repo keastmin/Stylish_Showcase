@@ -1,0 +1,414 @@
+{
+  "name": "BASTION 03 Cable Repair & Animation Pack",
+  "version": 1,
+  "fps": 30,
+  "colorSpace": "linear",
+  "rigType": "Generic",
+  "model": "Models/BASTION_03.fbx",
+  "blenderForward": "-Y",
+  "unityForward": "+Z",
+  "scaleMeters": 1,
+  "materials": [
+    {
+      "name": "01 | Ceramic titanium · midnight blue",
+      "baseColor": [
+        0.012000000104308128,
+        0.017000000923871994,
+        0.023000000044703484,
+        1.0
+      ],
+      "metallic": 0.6399999856948853,
+      "roughness": 0.3700000047683716,
+      "emission": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emissionStrength": 0.0
+    },
+    {
+      "name": "02 | Secondary armor · slate",
+      "baseColor": [
+        0.03799999877810478,
+        0.04699999839067459,
+        0.05900000035762787,
+        1.0
+      ],
+      "metallic": 0.6800000071525574,
+      "roughness": 0.3199999928474426,
+      "emission": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emissionStrength": 0.0
+    },
+    {
+      "name": "03 | Joint carbon",
+      "baseColor": [
+        0.006000000052154064,
+        0.008999999612569809,
+        0.012000000104308128,
+        1.0
+      ],
+      "metallic": 0.5,
+      "roughness": 0.4399999976158142,
+      "emission": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emissionStrength": 0.0
+    },
+    {
+      "name": "04 | Machined steel",
+      "baseColor": [
+        0.12999999523162842,
+        0.17000000178813934,
+        0.20999999344348907,
+        1.0
+      ],
+      "metallic": 0.8299999833106995,
+      "roughness": 0.28999999165534973,
+      "emission": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emissionStrength": 0.0
+    },
+    {
+      "name": "05 | Blade honed edge",
+      "baseColor": [
+        0.4399999976158142,
+        0.5199999809265137,
+        0.5899999737739563,
+        1.0
+      ],
+      "metallic": 0.9300000071525574,
+      "roughness": 0.20999999344348907,
+      "emission": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emissionStrength": 0.0
+    },
+    {
+      "name": "06 | Rescue orange enamel",
+      "baseColor": [
+        0.2199999988079071,
+        0.039000000804662704,
+        0.014000000432133675,
+        1.0
+      ],
+      "metallic": 0.44999998807907104,
+      "roughness": 0.3700000047683716,
+      "emission": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emissionStrength": 0.0
+    },
+    {
+      "name": "07 | Identification ivory",
+      "baseColor": [
+        0.3499999940395355,
+        0.4000000059604645,
+        0.41999998688697815,
+        1.0
+      ],
+      "metallic": 0.3499999940395355,
+      "roughness": 0.4000000059604645,
+      "emission": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emissionStrength": 0.0
+    },
+    {
+      "name": "08 | Sensor / ion cyan",
+      "baseColor": [
+        0.27000001072883606,
+        0.012000000104308128,
+        0.00800000037997961,
+        1.0
+      ],
+      "metallic": 0.30000001192092896,
+      "roughness": 0.3199999928474426,
+      "emission": [
+        0.27000001072883606,
+        0.012000000104308128,
+        0.00800000037997961
+      ],
+      "emissionStrength": 0.8500000238418579
+    },
+    {
+      "name": "10 | Deep vent cavities",
+      "baseColor": [
+        0.004999999888241291,
+        0.008999999612569809,
+        0.014000000432133675,
+        1.0
+      ],
+      "metallic": 0.15000000596046448,
+      "roughness": 0.699999988079071,
+      "emission": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emissionStrength": 0.0
+    },
+    {
+      "name": "12 | Single red optic",
+      "baseColor": [
+        0.3499999940395355,
+        0.0010000000474974513,
+        0.0020000000949949026,
+        1.0
+      ],
+      "metallic": 0.05000000074505806,
+      "roughness": 0.20999999344348907,
+      "emission": [
+        0.6499999761581421,
+        0.0010000000474974513,
+        0.0020000000949949026
+      ],
+      "emissionStrength": 1.2000000476837158
+    }
+  ],
+  "clips": [
+    {
+      "name": "Idle",
+      "filename": "Animations/FBX/BASTION_03_Idle.fbx",
+      "loop": true,
+      "fps": 30,
+      "startFrame": 1,
+      "endFrame": 121,
+      "duration": 4.0
+    },
+    {
+      "name": "Walk",
+      "filename": "Animations/FBX/BASTION_03_Walk.fbx",
+      "loop": true,
+      "fps": 30,
+      "startFrame": 1,
+      "endFrame": 49,
+      "duration": 1.6
+    },
+    {
+      "name": "BladeSlash",
+      "filename": "Animations/FBX/BASTION_03_BladeSlash.fbx",
+      "loop": false,
+      "fps": 30,
+      "startFrame": 1,
+      "endFrame": 73,
+      "duration": 2.4
+    },
+    {
+      "name": "GatlingFire",
+      "filename": "Animations/FBX/BASTION_03_GatlingFire.fbx",
+      "loop": false,
+      "fps": 30,
+      "startFrame": 1,
+      "endFrame": 97,
+      "duration": 3.2
+    },
+    {
+      "name": "MissileLaunch",
+      "filename": "Animations/FBX/BASTION_03_MissileLaunch.fbx",
+      "loop": false,
+      "fps": 30,
+      "startFrame": 1,
+      "endFrame": 121,
+      "duration": 4.0
+    }
+  ],
+  "cables": [
+    {
+      "name": "Arm power loom L",
+      "bones": [
+        "upper_arm.L",
+        "forearm.L"
+      ],
+      "endpoints": [
+        [
+          1.0199999809265137,
+          0.15000000596046448,
+          2.069999933242798
+        ],
+        [
+          1.0700000524520874,
+          0.13500000536441803,
+          1.659999966621399
+        ]
+      ],
+      "rings": 49,
+      "sides": 12
+    },
+    {
+      "name": "Arm power loom R",
+      "bones": [
+        "upper_arm.R",
+        "forearm.R"
+      ],
+      "endpoints": [
+        [
+          -1.0199999809265137,
+          0.15000000596046448,
+          2.069999933242798
+        ],
+        [
+          -1.0700000524520874,
+          0.13500000536441803,
+          1.659999966621399
+        ]
+      ],
+      "rings": 49,
+      "sides": 12
+    },
+    {
+      "name": "Dorsal armored cable",
+      "bones": [
+        "pelvis",
+        "spine"
+      ],
+      "endpoints": [
+        [
+          -0.20000000298023224,
+          0.3149999976158142,
+          1.5099999904632568
+        ],
+        [
+          -0.1899999976158142,
+          0.6399999856948853,
+          1.909999966621399
+        ]
+      ],
+      "rings": 49,
+      "sides": 12
+    },
+    {
+      "name": "Dorsal armored cable.001",
+      "bones": [
+        "pelvis",
+        "spine"
+      ],
+      "endpoints": [
+        [
+          0.20000000298023224,
+          0.3149999976158142,
+          1.5099999904632568
+        ],
+        [
+          0.1899999976158142,
+          0.6399999856948853,
+          1.909999966621399
+        ]
+      ],
+      "rings": 49,
+      "sides": 12
+    }
+  ],
+  "notes": [
+    "4 flexible cables, 8 rigid armor sockets.",
+    "Walk is in place; movement speed is controlled by game code.",
+    "MissileLaunch animates the launcher and recoil. Spawn projectile/VFX through SOCKET_Missile.L."
+  ],
+  "animationDetails": {
+    "rig": "BASTION_03_RIG",
+    "fps": 30,
+    "root_motion": false,
+    "units": "metres",
+    "forward": "-Y",
+    "up": "+Z",
+    "clips": [
+      {
+        "name": "BASTION_Idle",
+        "end": 121,
+        "loop": true,
+        "description": "Servo idle, optical scanning and subtle power-cycle weight shift.",
+        "events": [],
+        "start": 1,
+        "seconds": 4.0
+      },
+      {
+        "name": "BASTION_Walk",
+        "end": 49,
+        "loop": true,
+        "description": "In-place heavy patrol with 60% support and 0.105 m foot clearance.",
+        "recommended_speed_mps": 0.45833333333333337,
+        "events": [
+          {
+            "frame": 1,
+            "name": "LeftFootContact"
+          },
+          {
+            "frame": 25,
+            "name": "RightFootContact"
+          }
+        ],
+        "start": 1,
+        "seconds": 1.6
+      },
+      {
+        "name": "BASTION_BladeSlash",
+        "end": 73,
+        "loop": false,
+        "description": "Anticipated overhead diagonal cleave, impact follow-through and recovery.",
+        "events": [
+          {
+            "frame": 33,
+            "name": "BladeHitWindowStart"
+          },
+          {
+            "frame": 39,
+            "name": "BladeHitWindowEnd"
+          }
+        ],
+        "start": 1,
+        "seconds": 2.4
+      },
+      {
+        "name": "BASTION_GatlingFire",
+        "end": 97,
+        "loop": false,
+        "description": "Brace, barrel spin-up, sustained recoil burst, spin-down and ready.",
+        "events": [
+          {
+            "frame": 32,
+            "name": "GatlingFireStart"
+          },
+          {
+            "frame": 68,
+            "name": "GatlingFireEnd"
+          }
+        ],
+        "start": 1,
+        "seconds": 3.2
+      },
+      {
+        "name": "BASTION_MissileLaunch",
+        "end": 121,
+        "loop": false,
+        "description": "Staggered hatch opening, paired launch impulses, hatch closing and recovery.",
+        "events": [
+          {
+            "frame": 48,
+            "name": "LaunchMissileLeft"
+          },
+          {
+            "frame": 60,
+            "name": "LaunchMissileRight"
+          }
+        ],
+        "start": 1,
+        "seconds": 4.0
+      }
+    ],
+    "note": "Event labels are timing metadata, not mandatory Unity AnimationEvent callbacks."
+  }
+}

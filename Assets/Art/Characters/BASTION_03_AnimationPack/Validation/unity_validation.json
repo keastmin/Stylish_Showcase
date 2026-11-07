@@ -1,0 +1,105 @@
+{
+    "unityVersion": "6000.5.8f1",
+    "prefab": "Assets/Art/Characters/BASTION_03_AnimationPack/Prefabs/BASTION_03.prefab",
+    "controller": "Assets/Art/Characters/BASTION_03_AnimationPack/Animator/BASTION_03.controller",
+    "renderers": 389,
+    "skinnedMeshes": 389,
+    "materialCount": 10,
+    "bones": 35,
+    "avatarValid": true,
+    "activeScenePreserved": true,
+    "modelSize": {
+        "x": 3.2160277366638185,
+        "y": 3.2432122230529787,
+        "z": 2.227499008178711
+    },
+    "clips": [
+        {
+            "name": "Idle",
+            "duration": 4.000000476837158,
+            "frameRate": 30.0,
+            "loop": true,
+            "curveCount": 370,
+            "missingPaths": [],
+            "sampleTimes": [
+                0.0,
+                1.0000001192092896,
+                2.000000238418579,
+                3.000000476837158,
+                4.000000476837158
+            ],
+            "maximumSampledPositionDelta": 0.008944248780608178,
+            "maximumSampledRotationDegrees": 3.1999549865722658
+        },
+        {
+            "name": "Walk",
+            "duration": 1.6000001430511475,
+            "frameRate": 30.0,
+            "loop": true,
+            "curveCount": 370,
+            "missingPaths": [],
+            "sampleTimes": [
+                0.0,
+                0.40000003576278689,
+                0.8000000715255737,
+                1.2000000476837159,
+                1.6000001430511475
+            ],
+            "maximumSampledPositionDelta": 0.3666667342185974,
+            "maximumSampledRotationDegrees": 31.924612045288087
+        },
+        {
+            "name": "BladeSlash",
+            "duration": 2.4000000953674318,
+            "frameRate": 30.0,
+            "loop": false,
+            "curveCount": 370,
+            "missingPaths": [],
+            "sampleTimes": [
+                0.0,
+                0.6000000238418579,
+                1.2000000476837159,
+                1.8000000715255738,
+                2.4000000953674318
+            ],
+            "maximumSampledPositionDelta": 0.06951593607664108,
+            "maximumSampledRotationDegrees": 68.84506225585938
+        },
+        {
+            "name": "GatlingFire",
+            "duration": 3.200000286102295,
+            "frameRate": 30.0,
+            "loop": false,
+            "curveCount": 370,
+            "missingPaths": [],
+            "sampleTimes": [
+                0.0,
+                0.8000000715255737,
+                1.6000001430511475,
+                2.4000000953674318,
+                3.200000286102295
+            ],
+            "maximumSampledPositionDelta": 0.06538353860378266,
+            "maximumSampledRotationDegrees": 153.0908660888672
+        },
+        {
+            "name": "MissileLaunch",
+            "duration": 4.000000476837158,
+            "frameRate": 30.0,
+            "loop": false,
+            "curveCount": 370,
+            "missingPaths": [],
+            "sampleTimes": [
+                0.0,
+                1.0000001192092896,
+                2.000000238418579,
+                3.000000476837158,
+                4.000000476837158
+            ],
+            "maximumSampledPositionDelta": 0.04878878593444824,
+            "maximumSampledRotationDegrees": 104.0
+        }
+    ],
+    "errors": [],
+    "passed": true
+}

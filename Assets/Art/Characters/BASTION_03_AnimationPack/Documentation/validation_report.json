@@ -1,0 +1,259 @@
+{
+  "schemaVersion": 1,
+  "rig": "BASTION_03_RIG",
+  "units": "metres",
+  "frameRate": 30.0,
+  "groundZ": 0,
+  "thresholds": {
+    "cableAnchorMetres": 0.0001,
+    "loopMatrix": 0.0001,
+    "solePenetrationMetres": 0.015,
+    "deepBladePenetrationMetres": 0.03
+  },
+  "failures": [],
+  "warnings": [],
+  "weights": {
+    "meshCount": 389,
+    "vertexCount": 20372,
+    "maxInfluences": 2,
+    "unweightedVertices": 0,
+    "invalidWeightSums": 0,
+    "verticesOverFourInfluences": 0,
+    "examples": []
+  },
+  "actions": [
+    {
+      "name": "BASTION_Idle",
+      "startFrame": 1,
+      "endFrame": 121,
+      "sampledFrames": 121,
+      "durationSeconds": 4.0,
+      "loopExpected": true,
+      "curves": 319,
+      "keyframes": 38599,
+      "minKeyframesPerCurve": 121,
+      "maxKeyframesPerCurve": 121,
+      "cableMaxEndpointError": 7.158763497748562e-07,
+      "cableWorst": {
+        "mesh": "Arm power loom R",
+        "endpoint": 0,
+        "frame": 10
+      },
+      "nonfiniteTransformCount": 0,
+      "maxFootIKTargetError": 7.97255642429522e-07,
+      "feet": {
+        "L": {
+          "anklePositionRange": [
+            2.384185791015625e-07,
+            1.9371509552001953e-07,
+            4.76837158203125e-07
+          ],
+          "minSoleZ": -8.083879947662354e-07,
+          "maxSoleZ": -3.3155083656311035e-07,
+          "groundContactFrameCount": 121
+        },
+        "R": {
+          "anklePositionRange": [
+            2.384185791015625e-07,
+            2.086162567138672e-07,
+            4.76837158203125e-07
+          ],
+          "minSoleZ": -8.083879947662354e-07,
+          "maxSoleZ": -2.942979335784912e-07,
+          "groundContactFrameCount": 121
+        }
+      },
+      "minBladeZ": 0.1204504519701004,
+      "minBladeFrame": 25,
+      "loopMaxMatrixError": 5.933021764963555e-17
+    },
+    {
+      "name": "BASTION_Walk",
+      "startFrame": 1,
+      "endFrame": 49,
+      "sampledFrames": 49,
+      "durationSeconds": 1.6,
+      "loopExpected": true,
+      "curves": 319,
+      "keyframes": 15631,
+      "minKeyframesPerCurve": 49,
+      "maxKeyframesPerCurve": 49,
+      "cableMaxEndpointError": 4.915124923727108e-07,
+      "cableWorst": {
+        "mesh": "Arm power loom L",
+        "endpoint": 0,
+        "frame": 8
+      },
+      "nonfiniteTransformCount": 0,
+      "maxFootIKTargetError": 1.384465435055748e-06,
+      "feet": {
+        "L": {
+          "anklePositionRange": [
+            1.341104507446289e-06,
+            0.43999500572681427,
+            0.10455077886581421
+          ],
+          "minSoleZ": -1.1809170246124268e-06,
+          "maxSoleZ": 0.10454998165369034,
+          "groundContactFrameCount": 33,
+          "stanceSampleCount": 30,
+          "maxStanceVelocityResidualMetresPerFrame": 6.203426346613048e-07,
+          "maxStanceSoleDistanceFromGround": 1.1809170246124268e-06
+        },
+        "R": {
+          "anklePositionRange": [
+            1.4007091522216797e-06,
+            0.4399949908256531,
+            0.10455065965652466
+          ],
+          "minSoleZ": -1.166015863418579e-06,
+          "maxSoleZ": 0.10454990714788437,
+          "groundContactFrameCount": 33,
+          "stanceSampleCount": 30,
+          "maxStanceVelocityResidualMetresPerFrame": 7.15697615235838e-07,
+          "maxStanceSoleDistanceFromGround": 1.166015863418579e-06
+        }
+      },
+      "minBladeZ": 0.04776424169540405,
+      "minBladeFrame": 13,
+      "loopMaxMatrixError": 1.1043270631986133e-17
+    },
+    {
+      "name": "BASTION_BladeSlash",
+      "startFrame": 1,
+      "endFrame": 73,
+      "sampledFrames": 73,
+      "durationSeconds": 2.4,
+      "loopExpected": false,
+      "curves": 319,
+      "keyframes": 23287,
+      "minKeyframesPerCurve": 73,
+      "maxKeyframesPerCurve": 73,
+      "cableMaxEndpointError": 5.331722099427833e-07,
+      "cableWorst": {
+        "mesh": "Arm power loom L",
+        "endpoint": 0,
+        "frame": 7
+      },
+      "nonfiniteTransformCount": 0,
+      "maxFootIKTargetError": 1.0629618290177826e-06,
+      "feet": {
+        "L": {
+          "anklePositionRange": [
+            5.960464477539062e-07,
+            3.725290298461914e-07,
+            5.364418029785156e-07
+          ],
+          "minSoleZ": -9.08970832824707e-07,
+          "maxSoleZ": -3.0547380447387695e-07,
+          "groundContactFrameCount": 73
+        },
+        "R": {
+          "anklePositionRange": [
+            5.066394805908203e-07,
+            4.172325134277344e-07,
+            4.76837158203125e-07
+          ],
+          "minSoleZ": -8.866190910339355e-07,
+          "maxSoleZ": -3.427267074584961e-07,
+          "groundContactFrameCount": 73
+        }
+      },
+      "minBladeZ": 0.12861919403076172,
+      "minBladeFrame": 1,
+      "loopMaxMatrixError": 0.0
+    },
+    {
+      "name": "BASTION_GatlingFire",
+      "startFrame": 1,
+      "endFrame": 97,
+      "sampledFrames": 97,
+      "durationSeconds": 3.2,
+      "loopExpected": false,
+      "curves": 319,
+      "keyframes": 30943,
+      "minKeyframesPerCurve": 97,
+      "maxKeyframesPerCurve": 97,
+      "cableMaxEndpointError": 7.252748920701716e-07,
+      "cableWorst": {
+        "mesh": "Arm power loom L",
+        "endpoint": 0,
+        "frame": 6
+      },
+      "nonfiniteTransformCount": 0,
+      "maxFootIKTargetError": 1.0082882035594107e-06,
+      "feet": {
+        "L": {
+          "anklePositionRange": [
+            4.172325134277344e-07,
+            2.5331974029541016e-07,
+            4.76837158203125e-07
+          ],
+          "minSoleZ": -8.642673492431641e-07,
+          "maxSoleZ": -3.762543201446533e-07,
+          "groundContactFrameCount": 97
+        },
+        "R": {
+          "anklePositionRange": [
+            4.172325134277344e-07,
+            2.980232238769531e-07,
+            7.748603820800781e-07
+          ],
+          "minSoleZ": -9.275972843170166e-07,
+          "maxSoleZ": -2.3469328880310059e-07,
+          "groundContactFrameCount": 97
+        }
+      },
+      "minBladeZ": 0.12861919403076172,
+      "minBladeFrame": 1,
+      "loopMaxMatrixError": 2.384185791015625e-07
+    },
+    {
+      "name": "BASTION_MissileLaunch",
+      "startFrame": 1,
+      "endFrame": 121,
+      "sampledFrames": 121,
+      "durationSeconds": 4.0,
+      "loopExpected": false,
+      "curves": 319,
+      "keyframes": 38599,
+      "minKeyframesPerCurve": 121,
+      "maxKeyframesPerCurve": 121,
+      "cableMaxEndpointError": 5.333283593706274e-07,
+      "cableWorst": {
+        "mesh": "Arm power loom R",
+        "endpoint": 0,
+        "frame": 74
+      },
+      "nonfiniteTransformCount": 0,
+      "maxFootIKTargetError": 1.0463292036308051e-06,
+      "feet": {
+        "L": {
+          "anklePositionRange": [
+            3.8743019104003906e-07,
+            3.725290298461914e-07,
+            5.364418029785156e-07
+          ],
+          "minSoleZ": -9.015202522277832e-07,
+          "maxSoleZ": -4.0605664253234863e-07,
+          "groundContactFrameCount": 121
+        },
+        "R": {
+          "anklePositionRange": [
+            3.8743019104003906e-07,
+            4.023313522338867e-07,
+            5.364418029785156e-07
+          ],
+          "minSoleZ": -9.08970832824707e-07,
+          "maxSoleZ": -3.948807716369629e-07,
+          "groundContactFrameCount": 121
+        }
+      },
+      "minBladeZ": 0.12861919403076172,
+      "minBladeFrame": 1,
+      "loopMaxMatrixError": 0.0
+    }
+  ],
+  "scope": "All integer animation frames; cable endpoints, skeleton transforms, loop closure, sole and blade height. Does not prove absence of all armor self-intersections.",
+  "passed": true
+}

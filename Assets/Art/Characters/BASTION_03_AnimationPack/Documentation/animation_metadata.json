@@ -1,0 +1,93 @@
+{
+  "rig": "BASTION_03_RIG",
+  "fps": 30,
+  "root_motion": false,
+  "units": "metres",
+  "forward": "-Y",
+  "up": "+Z",
+  "clips": [
+    {
+      "name": "BASTION_Idle",
+      "end": 121,
+      "loop": true,
+      "description": "Servo idle, optical scanning and subtle power-cycle weight shift.",
+      "events": [],
+      "start": 1,
+      "seconds": 4.0
+    },
+    {
+      "name": "BASTION_Walk",
+      "end": 49,
+      "loop": true,
+      "description": "In-place heavy patrol with 60% support and 0.105 m foot clearance.",
+      "recommended_speed_mps": 0.45833333333333337,
+      "events": [
+        {
+          "frame": 1,
+          "name": "LeftFootContact"
+        },
+        {
+          "frame": 25,
+          "name": "RightFootContact"
+        }
+      ],
+      "start": 1,
+      "seconds": 1.6
+    },
+    {
+      "name": "BASTION_BladeSlash",
+      "end": 73,
+      "loop": false,
+      "description": "Anticipated overhead diagonal cleave, impact follow-through and recovery.",
+      "events": [
+        {
+          "frame": 33,
+          "name": "BladeHitWindowStart"
+        },
+        {
+          "frame": 39,
+          "name": "BladeHitWindowEnd"
+        }
+      ],
+      "start": 1,
+      "seconds": 2.4
+    },
+    {
+      "name": "BASTION_GatlingFire",
+      "end": 97,
+      "loop": false,
+      "description": "Brace, barrel spin-up, sustained recoil burst, spin-down and ready.",
+      "events": [
+        {
+          "frame": 32,
+          "name": "GatlingFireStart"
+        },
+        {
+          "frame": 68,
+          "name": "GatlingFireEnd"
+        }
+      ],
+      "start": 1,
+      "seconds": 3.2
+    },
+    {
+      "name": "BASTION_MissileLaunch",
+      "end": 121,
+      "loop": false,
+      "description": "Staggered hatch opening, paired launch impulses, hatch closing and recovery.",
+      "events": [
+        {
+          "frame": 48,
+          "name": "LaunchMissileLeft"
+        },
+        {
+          "frame": 60,
+          "name": "LaunchMissileRight"
+        }
+      ],
+      "start": 1,
+      "seconds": 4.0
+    }
+  ],
+  "note": "Event labels are timing metadata, not mandatory Unity AnimationEvent callbacks."
+}
