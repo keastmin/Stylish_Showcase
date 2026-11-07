@@ -1,0 +1,124 @@
+{
+  "status": "complete",
+  "startedUtc": "2026-11-06T22:14:57.6848511Z",
+  "finishedUtc": "2026-11-06T22:15:59.8586437Z",
+  "scenePath": "Assets/01_Scenes/BastionFoundryArena.unity",
+  "failure": "",
+  "screenshot": "C:\\Users\\kemin\\Unity\\ProjectR\\Temp\\BastionArenaGame.png",
+  "passed": true,
+  "editorSceneLayoutAndDirtyFlagsPreserved": true,
+  "originalPlayModeStartSceneRestored": true,
+  "originalInputSettingsRestored": true,
+  "originalRunInBackgroundRestored": true,
+  "runtimeSceneCount": 1,
+  "injectedDynamicUpdates": 662,
+  "runtimeScenePath": "Assets/01_Scenes/BastionFoundryArena.unity",
+  "editorScenesBefore": [
+    {
+      "path": "Assets/01_Scenes/CombatPrototypeScene.unity",
+      "name": "CombatPrototypeScene",
+      "loaded": true,
+      "active": true,
+      "dirty": true,
+      "rootCount": 19
+    }
+  ],
+  "editorScenesAfter": [
+    {
+      "path": "Assets/01_Scenes/CombatPrototypeScene.unity",
+      "name": "CombatPrototypeScene",
+      "loaded": true,
+      "active": true,
+      "dirty": true,
+      "rootCount": 19
+    }
+  ],
+  "observations": [
+    {
+      "name": "Single gameplay scene",
+      "detail": "Assets/01_Scenes/BastionFoundryArena.unity",
+      "passed": true,
+      "value": 1.0
+    },
+    {
+      "name": "No EnemyCore or AI wired",
+      "detail": "All active and inactive scene objects checked.",
+      "passed": true,
+      "value": 0.0
+    },
+    {
+      "name": "Boss animation disconnected",
+      "detail": "BASTION-03 | Static Boss:enabled=False,controller=False",
+      "passed": true,
+      "value": 1.0
+    },
+    {
+      "name": "Ground at initial spawn",
+      "detail": "COL_ArenaFloor_Proxy; normal=(0.00, 1.00, 0.00)",
+      "passed": true,
+      "value": 1.1920928955078125E-07
+    },
+    {
+      "name": "W forward",
+      "detail": "PlayerInputCollector=(0.00, 1.00); displacement=(0.00, 0.00, 3.95); camera-relative travel=3.948884",
+      "passed": true,
+      "value": 3.9488840103149414
+    },
+    {
+      "name": "Ground during W forward",
+      "detail": "COL_ArenaFloor_Proxy; normal=(0.00, 1.00, 0.00)",
+      "passed": true,
+      "value": 1.1920928955078125E-07
+    },
+    {
+      "name": "Idle stops",
+      "detail": "After key release and settling, position drift over 0.5 seconds; mover velocity=(0.00, 0.00, -0.01)",
+      "passed": true,
+      "value": 0.0017451781313866377
+    },
+    {
+      "name": "D strafe",
+      "detail": "PlayerInputCollector=(1.00, 0.00); displacement=(3.84, 0.00, -0.51); camera-relative travel=3.84513",
+      "passed": true,
+      "value": 3.8781676292419434
+    },
+    {
+      "name": "Ground during D strafe",
+      "detail": "COL_ArenaFloor_Proxy; normal=(0.00, 1.00, 0.00)",
+      "passed": true,
+      "value": 1.1920928955078125E-07
+    },
+    {
+      "name": "Mouse camera orbit",
+      "detail": "Synthetic mouse delta traveled through existing Cinemachine InputAction; orbit change=112.2925",
+      "passed": true,
+      "value": 112.23113250732422
+    },
+    {
+      "name": "LeftShift ordinary dodge",
+      "detail": "Actual keyboard action consumed a dodge charge and moved the Rigidbody.",
+      "passed": true,
+      "value": 4.259778022766113
+    },
+    {
+      "name": "Ground after movement",
+      "detail": "COL_ArenaFloor_Proxy; normal=(0.00, 1.00, 0.00)",
+      "passed": true,
+      "value": 1.1920928955078125E-07
+    },
+    {
+      "name": "Ground at restored spawn",
+      "detail": "COL_ArenaFloor_Proxy; normal=(0.00, 1.00, 0.00)",
+      "passed": true,
+      "value": 1.1920928955078125E-07
+    },
+    {
+      "name": "Game view screenshot",
+      "detail": "C:\\Users\\kemin\\Unity\\ProjectR\\Temp\\BastionArenaGame.png",
+      "passed": true,
+      "value": 418796.0
+    }
+  ],
+  "runtimeErrors": [],
+  "editorCleanupRecovery": "Temporary verification helper replaced transient InputSettings; Unity destroyed the old instance automatically. A post-Play assertion occurred during helper cleanup. The exact pre-test JSON snapshot was restored to a new transient InputSettings instance, equality verified, and editor state restoration passed. The temporary helper was removed from Assets. No gameplay errors occurred."
+}
