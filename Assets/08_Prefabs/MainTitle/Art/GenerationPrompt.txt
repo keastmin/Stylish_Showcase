@@ -1,0 +1,11 @@
+Built-in image_gen tool. Generated 2026-11-07. Project asset: TitleSanctuary.png.
+The original PNG is copied without image edits. No UI text is baked into the artwork.
+
+Use case: stylized-concept
+Asset type: full-bleed game-ready main title background key art for a premium third-person stylish boss-action game, landscape 16:9, 2048x1152 composition.
+Primary request: a cinematic painterly 3D concept-art vista of a vast ruined brutalist arena at dusk. On the right half stands an enormous broken circular monolith, with weathered dark stone, precise angular monumental architecture, and restrained pale-gold seams of light. A tiny lone scythe-wielding warrior silhouette stands in the lower-right foreground facing a distant imposing sentinel silhouette in the arena, conveying scale and anticipation before a duel. Atmospheric mist separates the layers, subtle drifting ash, elegant high-end game key art.
+Composition/framing: wide cinematic landscape. Keep the LEFTMOST 45 PERCENT very dark, calm, uncluttered negative space with only soft midnight atmosphere and very subtle ground texture, reserved for separately rendered UI title and menu. Keep all focal architecture and character silhouettes on the RIGHT half. No prominent elements in the left UI region. Fine foreground stone detail concentrated along the lower-right edge; use depth and a sweeping curved arena floor to guide the eye toward the right-side monolith.
+Lighting/mood: contemplative but powerful, dusk haze, beautiful controlled rim light, restrained rays behind the broken circular monolith, premium cinematic lighting, readable depth and silhouettes.
+Color palette: midnight navy, deep desaturated teal-black, icy blue-gray, restrained pale champagne-gold light, consistent with a refined science-fiction action game. Avoid saturated orange, red, green, or neon rainbow.
+Materials/textures: sophisticated weathered obsidian and concrete, subtle brushed metallic details, atmospheric haze; painterly-realistic finished illustration, not noisy or oversharpened.
+Constraints: background artwork only, no text, no lettering, no numbers, no logos, no watermark, no UI, no buttons, no border, no frame, no screenshot mockup. Do not crop the ring out of frame. Maintain clear quiet left-side space.

@@ -1,0 +1,16 @@
+ScytheCrest.png — generated with the built-in image_gen tool on 2026-11-03.
+Final palette: white luminous core, pale cyan #BAF3FF, blue-gray #718A9A, silver/gunmetal.
+
+Initial generation prompt:
+Use case: stylized-concept
+Asset type: transparent raster HUD crest for a third-person stylish action game, displayed at 96–128 pixels.
+Primary request: one isolated premium painted hard-surface scythe emblem. A dynamic near-circular crescent scythe blade with a short diagonal weapon haft, bold and immediately readable silhouette. Brushed gunmetal and silver armor plates, an acid-lime luminous cutting edge, a few restrained green energy wisps that follow the blade curve. Sharp angular detailing, polished contemporary game icon rendering, subtle metallic highlights and depth.
+Composition/framing: square image around 1024x1024, one centered emblem with 12 percent transparent padding, no cropping. Favor broad clean shapes readable when small.
+Color palette: dark graphite, silver, acid lime green. No additional colors.
+Scene/backdrop: genuinely transparent alpha background, including the open center and outside edges.
+Constraints: no text, lettering, numerals, logos, watermark, UI frame, badge disc, backdrop, floor, character, or scenery. This is a decorative weapon crest only.
+
+Final palette edit prompt:
+Use case: precise-object-edit. Target: the attached transparent scythe crest. Change only its luminous green color palette: replace every acid lime / yellow-green blade edge, inset gem, glow and energy wisp with a WHITE luminous core plus PALE CYAN #BAF3FF illumination and BLUE-GRAY #718A9A cool shadow. Remove all green and yellow hues. Preserve the exact weapon shape, silver/gunmetal surfaces, composition, clean cutout alpha transparency and original artwork detail. Maintain a genuinely transparent background throughout, including center and outer margins. No new objects, no text, no frame, no backdrop. This is a premium ice-cyan energy scythe HUD icon.
+
+The final PNG was copied directly from the built-in generator output with its alpha channel intact. No external image editing or background removal was performed.
